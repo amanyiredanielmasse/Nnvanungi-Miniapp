@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>DA — Digital Assistant</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:            #0e0f11;
+  --surface:       #161719;
+  --surface2:      #1c1e21;
+  --border:        #252729;
+  --border-hover:  #3a3c40;
+  --text:          #e8e9eb;
+  --text-dim:      #6b6e74;
+  --text-mid:      #9a9da3;
+  --accent:        #4ade80;
+  --accent-dim:    rgba(74,222,128,0.10);
+  --accent-border: rgba(74,222,128,0.25);
+  --danger:        #f87171;
+  --danger-dim:    rgba(248,113,113,0.10);
+  --warn:          #fbbf24;
+  --warn-dim:      rgba(251,191,36,0.10);
+  --mono:          'IBM Plex Mono', monospace;
+  --sans:          'IBM Plex Sans', sans-serif;
+  --radius:        6px;
+  --safe-bottom:   env(safe-area-inset-bottom, 0px);
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+/* ── Loading screen ── */
+#loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+.loading-logo {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.loading-logo span {
+  display: block;
+  font-family: var(--sans);
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-top: 2px;
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Error screen ── */
+#error-screen {
+  flex: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+.error-icon { font-size: 32px; }
+.error-title { font-family: var(--mono); font-size: 13px; color: var(--danger); }
+.error-msg { font-size: 13px; color: var(--text-mid); line-height: 1.6; max-width: 280px; }
+
+/* ── App shell ── */
+#app {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Top bar ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.topbar-brand {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  line-height: 1.2;
+}
+.topbar-brand strong {
+  display: block;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.topbar-user {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+/* ── Tab bar ── */
+.tabbar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover { color: var(--text-mid); }
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Tab panels ── */
+.tab-panel {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+.tab-panel.active { display: flex; }
+
+/* ════════════════════════════════════
+   WRITE TAB
+════════════════════════════════════ */
+.write-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.write-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 0;
+  flex-shrink: 0;
+}
+.write-date {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+.write-tag-pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.tag-pill {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 2px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.note-editor-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#note-textarea {
+  flex: 1;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.65;
+  padding: 14px 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#note-textarea::placeholder { color: var(--text-dim); }
+
+/* ── @ mention dropdown ── */
+.mention-dropdown {
+  position: absolute;
+  left: 12px; right: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 100;
+  max-height: 180px;
+  overflow-y: auto;
+  display: none;
+}
+.mention-dropdown.open { display: block; }
+.mention-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mention-item:last-child { border-bottom: none; }
+.mention-item:hover, .mention-item.focused { background: var(--accent-dim); }
+.mention-name { font-size: 13px; color: var(--text); font-weight: 500; }
+.mention-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.mention-loading {
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.write-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px calc(10px + var(--safe-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+  gap: 8px;
+}
+.write-hint {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.write-word-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary {
+  background: var(--accent);
+  color: #0e0f11;
+  font-weight: 500;
+}
+.btn-primary:hover:not(:disabled) { background: #6ee7a0; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-mid);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover:not(:disabled) { border-color: var(--border-hover); color: var(--text); }
+
+.btn-danger {
+  background: var(--danger-dim);
+  color: var(--danger);
+  border: 1px solid rgba(248,113,113,0.2);
+}
+.btn-danger:hover:not(:disabled) { background: rgba(248,113,113,0.18); }
+
+/* ── Save confirmation ── */
+.save-confirm {
+  padding: 8px 16px;
+  background: var(--accent-dim);
+  border-top: 1px solid var(--accent-border);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  text-align: center;
+  display: none;
+  flex-shrink: 0;
+  animation: slideDown 0.2s ease;
+}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ════════════════════════════════════
+   ASK TAB
+════════════════════════════════════ */
+.ask-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ask-history {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ask-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.ask-empty-icon { font-size: 28px; margin-bottom: 4px; }
+.ask-empty-hint {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.qa-block { display: flex; flex-direction: column; gap: 8px; }
+
+.bubble-q {
+  align-self: flex-end;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: 12px 12px 4px 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+  max-width: 85%;
+  line-height: 1.5;
+}
+
+.bubble-a {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px 12px 12px 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text);
+  max-width: 92%;
+  line-height: 1.65;
+}
+.bubble-a.thinking {
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.bubble-a .answer-text { white-space: pre-wrap; }
+
+.answer-sources {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.source-chip {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 2px;
+  background: var(--surface2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+.ask-input-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px calc(10px + var(--safe-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+  align-items: flex-end;
+}
+#ask-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  padding: 9px 12px;
+  outline: none;
+  resize: none;
+  min-height: 38px;
+  max-height: 120px;
+  line-height: 1.4;
+  overflow-y: auto;
+  transition: border-color 0.15s;
+}
+#ask-input:focus { border-color: var(--accent); }
+#ask-input::placeholder { color: var(--text-dim); }
+
+.ask-send-btn {
+  width: 38px; height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  color: #0e0f11;
+}
+.ask-send-btn:hover:not(:disabled) { background: #6ee7a0; }
+.ask-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ask-send-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+/* ════════════════════════════════════
+   HISTORY TAB
+════════════════════════════════════ */
+.history-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.history-filters {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+.filter-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.filter-chip:hover { border-color: var(--border-hover); color: var(--text-mid); }
+.filter-chip.active {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.note-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.note-card:hover { border-color: var(--border-hover); }
+.note-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.note-card-date {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.note-card-type {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.type-journal  { background: rgba(96,165,250,0.1); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+.type-idea     { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+.type-meeting  { background: rgba(167,139,250,0.1); color: #a78bfa; border: 1px solid rgba(167,139,250,0.2); }
+.type-event    { background: rgba(249,115,22,0.1); color: #f97316; border: 1px solid rgba(249,115,22,0.2); }
+.type-reference{ background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+.type-contact  { background: rgba(236,72,153,0.1); color: #ec4899; border: 1px solid rgba(236,72,153,0.2); }
+.type-free     { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+
+.note-card-content {
+  font-size: 13px;
+  color: var(--text-mid);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.note-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.note-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--surface2);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+/* Load more */
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+/* ════════════════════════════════════
+   EDIT MODAL
+════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 200;
+  display: none;
+  align-items: flex-end;
+}
+.modal-overlay.open { display: flex; }
+
+.modal-sheet {
+  width: 100%;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 14px 14px 0 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 90dvh;
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-handle {
+  width: 36px; height: 4px;
+  background: var(--border-hover);
+  border-radius: 2px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  flex-shrink: 0;
+}
+.modal-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.modal-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#edit-textarea {
+  width: 100%;
+  min-height: 180px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.65;
+  padding: 12px;
+  outline: none;
+  resize: none;
+  transition: border-color 0.15s;
+}
+#edit-textarea:focus { border-color: var(--accent); }
+
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px calc(10px + var(--safe-bottom));
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-footer .btn { flex: 1; justify-content: center; }
+
+/* ── Toast ── */
+#toast {
+  position: fixed;
+  bottom: calc(80px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--surface2);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+  z-index: 300;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+#toast.success { color: var(--accent); border-color: var(--accent-border); }
+#toast.error   { color: var(--danger); border-color: rgba(248,113,113,0.3); }
+</style>
+</head>
+<body>
+
+<!-- ── Loading ── -->
+<div id="loading">
+  <div class="loading-logo">
+    DA<span>Digital Assistant</span>
+  </div>
+  <div class="spinner"></div>
+</div>
+
+<!-- ── Error ── -->
+<div id="error-screen">
+  <div class="error-icon">⛔</div>
+  <div class="error-title">Access Denied</div>
+  <div class="error-msg" id="error-msg">
+    Your Telegram account isn't linked yet. Open the bot and link your account first.
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app">
+
+  <div class="topbar">
+    <div class="topbar-brand">
+      DA<strong>Digital Assistant</strong>
+    </div>
+    <div class="topbar-user" id="topbar-user"></div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab-btn active" data-tab="write">✏️ Write</button>
+    <button class="tab-btn"        data-tab="ask"  >🔍 Ask</button>
+    <button class="tab-btn"        data-tab="history">📋 Notes</button>
+  </div>
+
+  <!-- ══ WRITE TAB ══ -->
+  <div class="tab-panel active" id="tab-write">
+    <div class="write-area">
+      <div class="write-meta">
+        <span class="write-date" id="write-date"></span>
+        <div class="write-tag-pills" id="write-tag-pills"></div>
+      </div>
+
+      <div class="note-editor-wrap">
+        <textarea
+          id="note-textarea"
+          placeholder="What's on your mind? Type @ to mention a contact…"
+          spellcheck="true"
+        ></textarea>
+
+        <!-- @ mention dropdown -->
+        <div class="mention-dropdown" id="mention-dropdown"></div>
+      </div>
+
+      <div class="save-confirm" id="save-confirm">📝 Note saved — will classify tonight</div>
+
+      <div class="write-toolbar">
+        <span class="write-word-count" id="word-count">0 words</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" id="clear-btn">Clear</button>
+          <button class="btn btn-primary" id="save-btn">Save note</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ASK TAB ══ -->
+  <div class="tab-panel" id="tab-ask">
+    <div class="ask-area">
+      <div class="ask-history" id="ask-history">
+        <div class="ask-empty" id="ask-empty">
+          <div class="ask-empty-icon">🧠</div>
+          <div>Ask anything about your notes</div>
+          <div class="ask-empty-hint">Searches across all your memory</div>
+        </div>
+      </div>
+      <div class="ask-input-bar">
+        <textarea
+          id="ask-input"
+          placeholder="Ask your brain…"
+          rows="1"
+        ></textarea>
+        <button class="ask-send-btn" id="ask-send-btn" disabled>
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HISTORY TAB ══ -->
+  <div class="tab-panel" id="tab-history">
+    <div class="history-area">
+      <div class="history-filters" id="history-filters">
+        <button class="filter-chip active" data-type="all">All</button>
+        <button class="filter-chip" data-type="journal">Journal</button>
+        <button class="filter-chip" data-type="idea">Idea</button>
+        <button class="filter-chip" data-type="meeting">Meeting</button>
+        <button class="filter-chip" data-type="event">Event</button>
+        <button class="filter-chip" data-type="reference">Reference</button>
+        <button class="filter-chip" data-type="free">Unclassified</button>
+      </div>
+      <div class="history-list" id="history-list">
+        <div class="history-empty">
+          <div style="font-size:24px">📭</div>
+          <div>Loading notes…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<!-- ══ Edit Modal ══ -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Edit note</span>
+      <span class="modal-meta" id="edit-modal-date"></span>
+    </div>
+    <div class="modal-body">
+      <textarea id="edit-textarea" spellcheck="true"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger"  id="edit-delete-btn">Delete</button>
+      <button class="btn btn-ghost"   id="edit-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="edit-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// Config
+// ══════════════════════════════════════════════════════════
+const SUPABASE_URL = "https://zixysyctnynphstyvvgx.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppeHlzeWN0bnlucGhzdHl2dngiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NDk0OTQ0MCwiZXhwIjoyMDkwNTI1NDQwfQ.Ilu-T02HJfT0GnMzalvfxdQHLXBRkHxDJkqriFUEPJo";
+const AUTH_EDGE   = `${SUPABASE_URL}/functions/v1/miniapp-auth`;
+const QUERY_EDGE  = `${SUPABASE_URL}/functions/v1/query-memory`;
+
+// ══════════════════════════════════════════════════════════
+// State
+// ══════════════════════════════════════════════════════════
+let accessToken   = null;
+let userId        = null;
+let displayName   = null;
+let timezone      = "Africa/Kampala";
+let currentFilter = "all";
+let notesOffset   = 0;
+const PAGE_SIZE   = 20;
+let allNotesLoaded = false;
+let editingNoteId  = null;
+let mentionQuery   = "";
+let mentionStart   = -1;
+let mentionFocusIdx = -1;
+
+// ══════════════════════════════════════════════════════════
+// Helpers
+// ══════════════════════════════════════════════════════════
+function supaFetch(path, opts = {}) {
+  return fetch(SUPABASE_URL + path, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${accessToken}`,
+      ...(opts.headers || {}),
+    },
+  });
+}
+
+let toastTimer;
+function toast(msg, type = "success") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ""; }, 2800);
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-GB", {
+    weekday: "short", day: "numeric", month: "short"
+  });
+}
+
+function todayInTz(tz) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+}
+
+function wordCount(text) {
+  const t = text.trim();
+  return t === "" ? 0 : t.split(/\s+/).length;
+}
+
+// ══════════════════════════════════════════════════════════
+// Boot — Telegram initData auth
+// ══════════════════════════════════════════════════════════
+async function boot() {
+  const tg = window.Telegram?.WebApp;
+
+  // Expand to full height
+  if (tg) {
+    tg.expand();
+    tg.ready();
+    tg.enableClosingConfirmation?.();
+  }
+
+  const initData = tg?.initData || "";
+
+  if (!initData) {
+    // Dev fallback: show error with explanation
+    showError("Open this app through Telegram. Direct browser access is not supported.");
+    return;
+  }
+
+  try {
+    const res = await fetch(AUTH_EDGE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showError(data.error || "Authentication failed.");
+      return;
+    }
+
+    accessToken = data.access_token;
+    userId      = data.user_id;
+    displayName = data.display_name;
+    timezone    = data.timezone || "Africa/Kampala";
+
+    document.getElementById("topbar-user").textContent = displayName || "";
+    document.getElementById("write-date").textContent  = fmtDate(new Date().toISOString());
+
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("app").style.display = "flex";
+
+    // Load first batch of notes
+    loadNotes(true);
+
+  } catch (err) {
+    showError("Network error: " + err.message);
+  }
+}
+
+function showError(msg) {
+  document.getElementById("loading").style.display = "none";
+  const el = document.getElementById("error-screen");
+  el.style.display = "flex";
+  document.getElementById("error-msg").textContent = msg;
+}
+
+// ══════════════════════════════════════════════════════════
+// Tabs
+// ══════════════════════════════════════════════════════════
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(`tab-${tab}`).classList.add("active");
+    if (tab === "history") {
+      notesOffset = 0;
+      allNotesLoaded = false;
+      loadNotes(true);
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+// WRITE TAB
+// ══════════════════════════════════════════════════════════
+const noteTA = document.getElementById("note-textarea");
+const wordCountEl = document.getElementById("word-count");
+const saveConfirm = document.getElementById("save-confirm");
+
+noteTA.addEventListener("input", () => {
+  const wc = wordCount(noteTA.value);
+  wordCountEl.textContent = `${wc} word${wc === 1 ? "" : "s"}`;
+  handleMentionInput();
+  saveConfirm.style.display = "none";
+});
+
+noteTA.addEventListener("keydown", handleMentionKeydown);
+
+document.getElementById("clear-btn").addEventListener("click", () => {
+  if (noteTA.value.trim() === "") return;
+  if (!confirm("Clear this note?")) return;
+  noteTA.value = "";
+  wordCountEl.textContent = "0 words";
+  saveConfirm.style.display = "none";
+  closeMentionDropdown();
+});
+
+document.getElementById("save-btn").addEventListener("click", saveNote);
+
+async function saveNote() {
+  const content = noteTA.value.trim();
+  if (!content) { toast("Nothing to save", "error"); return; }
+
+  const btn = document.getElementById("save-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  try {
+    const noteDate = todayInTz(timezone);
+
+    // Insert note
+    const res = await supaFetch("/rest/v1/notes", {
+      method: "POST",
+      headers: { "Prefer": "return=representation" },
+      body: JSON.stringify({
+        user_id: userId,
+        content,
+        content_type: "free",
+        note_date: noteDate,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || "Failed to save note");
+    }
+
+    const [note] = await res.json();
+
+    // Queue embed + extract jobs
+    await supaFetch("/rest/v1/processing_queue", {
+      method: "POST",
+      body: JSON.stringify([
+        { note_id: note.id, user_id: userId, job_type: "embed",   status: "pending" },
+        { note_id: note.id, user_id: userId, job_type: "extract", status: "pending" },
+      ]),
+    });
+
+    // Clear editor
+    noteTA.value = "";
+    wordCountEl.textContent = "0 words";
+    saveConfirm.style.display = "block";
+    setTimeout(() => { saveConfirm.style.display = "none"; }, 3500);
+    toast("Note saved ✓");
+
+  } catch (err) {
+    toast(err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save note";
+  }
+}
+
+// ── @ mention autocomplete ────────────────────────────────
+const mentionDD = document.getElementById("mention-dropdown");
+let mentionSearchTimer;
+
+function handleMentionInput() {
+  const ta = noteTA;
+  const pos = ta.selectionStart;
+  const text = ta.value.substring(0, pos);
+  const atIdx = text.lastIndexOf("@");
+
+  if (atIdx === -1) { closeMentionDropdown(); return; }
+
+  const fragment = text.substring(atIdx + 1);
+  // Only trigger if we're right after @ with no whitespace
+  if (/\s/.test(fragment) && fragment.length > 0) {
+    closeMentionDropdown();
+    return;
+  }
+
+  mentionStart = atIdx;
+  mentionQuery = fragment;
+
+  clearTimeout(mentionSearchTimer);
+  if (fragment.length === 0) {
+    // Show immediately with a prompt
+    showMentionLoading();
+    mentionSearchTimer = setTimeout(() => searchContacts(""), 0);
+  } else {
+    showMentionLoading();
+    mentionSearchTimer = setTimeout(() => searchContacts(fragment), 200);
+  }
+}
+
+function handleMentionKeydown(e) {
+  if (!mentionDD.classList.contains("open")) return;
+
+  const items = mentionDD.querySelectorAll(".mention-item");
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    mentionFocusIdx = Math.min(mentionFocusIdx + 1, items.length - 1);
+    renderMentionFocus(items);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    mentionFocusIdx = Math.max(mentionFocusIdx - 1, 0);
+    renderMentionFocus(items);
+  } else if (e.key === "Enter" || e.key === "Tab") {
+    if (mentionFocusIdx >= 0 && items[mentionFocusIdx]) {
+      e.preventDefault();
+      items[mentionFocusIdx].click();
+    }
+  } else if (e.key === "Escape") {
+    closeMentionDropdown();
+  }
+}
+
+function renderMentionFocus(items) {
+  items.forEach((item, i) => {
+    item.classList.toggle("focused", i === mentionFocusIdx);
+  });
+}
+
+function showMentionLoading() {
+  mentionDD.innerHTML = `<div class="mention-loading">Searching contacts…</div>`;
+  positionMentionDropdown();
+  mentionDD.classList.add("open");
+}
+
+async function searchContacts(q) {
+  try {
+    const res = await supaFetch(
+      `/rest/v1/rpc/search_contacts`,
+      {
+        method: "POST",
+        body: JSON.stringify({ p_user_id: userId, p_query: q || " ", p_limit: 6 }),
+      }
+    );
+    const results = res.ok ? await res.json() : [];
+    renderMentionResults(results);
+  } catch {
+    closeMentionDropdown();
+  }
+}
+
+function renderMentionResults(contacts) {
+  if (!contacts || contacts.length === 0) {
+    mentionDD.innerHTML = `<div class="mention-loading">No contacts found</div>`;
+    return;
+  }
+  mentionFocusIdx = -1;
+  mentionDD.innerHTML = contacts.map((c, i) => {
+    const sub = [c.company, c.role].filter(Boolean).join(" · ") ||
+                (c.phones?.[0]?.number ?? "") ||
+                (c.relationship_type ?? "");
+    return `<div class="mention-item" data-name="${escapeHtml(c.full_name)}" data-idx="${i}">
+      <div class="mention-name">${escapeHtml(c.full_name)}</div>
+      ${sub ? `<div class="mention-sub">${escapeHtml(sub)}</div>` : ""}
+    </div>`;
+  }).join("");
+
+  mentionDD.querySelectorAll(".mention-item").forEach(item => {
+    item.addEventListener("click", () => insertMention(item.dataset.name));
+  });
+  positionMentionDropdown();
+  mentionDD.classList.add("open");
+}
+
+function positionMentionDropdown() {
+  // Position above the cursor line — simplified: always show above toolbar
+  const wrap = noteTA.parentElement;
+  const wrapH = wrap.offsetHeight;
+  const taH   = noteTA.offsetHeight;
+  mentionDD.style.bottom = `${taH - noteTA.scrollTop}px`;
+  mentionDD.style.top = "auto";
+}
+
+function insertMention(name) {
+  const ta = noteTA;
+  const before = ta.value.substring(0, mentionStart);
+  const after  = ta.value.substring(ta.selectionStart);
+  const inserted = `@${name}`;
+  ta.value = before + inserted + " " + after;
+  const pos = before.length + inserted.length + 1;
+  ta.setSelectionRange(pos, pos);
+  ta.focus();
+  closeMentionDropdown();
+  wordCountEl.textContent = `${wordCount(ta.value)} words`;
+}
+
+function closeMentionDropdown() {
+  mentionDD.classList.remove("open");
+  mentionStart  = -1;
+  mentionQuery  = "";
+  mentionFocusIdx = -1;
+}
+
+function escapeHtml(s) {
+  return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ══════════════════════════════════════════════════════════
+// ASK TAB
+// ══════════════════════════════════════════════════════════
+const askInput  = document.getElementById("ask-input");
+const askSendBtn = document.getElementById("ask-send-btn");
+const askHistory = document.getElementById("ask-history");
+
+askInput.addEventListener("input", () => {
+  askSendBtn.disabled = askInput.value.trim() === "";
+  // Auto-resize
+  askInput.style.height = "auto";
+  askInput.style.height = Math.min(askInput.scrollHeight, 120) + "px";
+});
+
+askInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    if (!askSendBtn.disabled) sendQuery();
+  }
+});
+
+askSendBtn.addEventListener("click", sendQuery);
+
+async function sendQuery() {
+  const q = askInput.value.trim();
+  if (!q) return;
+
+  // Hide empty state
+  document.getElementById("ask-empty")?.remove();
+
+  // Add question bubble
+  const qBlock = document.createElement("div");
+  qBlock.className = "qa-block";
+  qBlock.innerHTML = `
+    <div class="bubble-q">${escapeHtml(q)}</div>
+    <div class="bubble-a thinking" id="thinking-bubble">🔍 Searching your memory…</div>
+  `;
+  askHistory.appendChild(qBlock);
+  askHistory.scrollTop = askHistory.scrollHeight;
+
+  askInput.value = "";
+  askInput.style.height = "auto";
+  askSendBtn.disabled = true;
+
+  try {
+    const res = await fetch(QUERY_EDGE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ query: q, top_k: 8, hop_depth: 1 }),
+    });
+
+    const data = await res.json();
+    const thinkEl = document.getElementById("thinking-bubble");
+
+    if (!res.ok || data.error) {
+      if (thinkEl) thinkEl.outerHTML = `<div class="bubble-a" style="color:var(--danger)">${escapeHtml(data.error || "Query failed")}</div>`;
+      return;
+    }
+
+    const sourcesHtml = data.sources?.length
+      ? `<div class="answer-sources">
+          ${data.note_count ? `<span class="source-chip">📄 ${data.note_count} note${data.note_count > 1 ? "s" : ""}</span>` : ""}
+          ${data.contact_count ? `<span class="source-chip">👤 ${data.contact_count} contact${data.contact_count > 1 ? "s" : ""}</span>` : ""}
+          ${data.sources.slice(0, 4).map(s =>
+            `<span class="source-chip">${fmtDate(s.date)}</span>`
+          ).join("")}
+        </div>` : "";
+
+    if (thinkEl) {
+      thinkEl.className = "bubble-a";
+      thinkEl.removeAttribute("id");
+      thinkEl.innerHTML = `<div class="answer-text">${escapeHtml(data.answer || "")}</div>${sourcesHtml}`;
+    }
+
+    askHistory.scrollTop = askHistory.scrollHeight;
+
+  } catch (err) {
+    const thinkEl = document.getElementById("thinking-bubble");
+    if (thinkEl) thinkEl.outerHTML = `<div class="bubble-a" style="color:var(--danger)">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// HISTORY TAB
+// ══════════════════════════════════════════════════════════
+document.querySelectorAll(".filter-chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentFilter = chip.dataset.type;
+    notesOffset = 0;
+    allNotesLoaded = false;
+    loadNotes(true);
+  });
+});
+
+async function loadNotes(reset = false) {
+  const list = document.getElementById("history-list");
+  if (reset) {
+    list.innerHTML = `<div class="history-empty"><div style="font-size:20px">⏳</div><div>Loading…</div></div>`;
+    notesOffset = 0;
+    allNotesLoaded = false;
+  }
+  if (allNotesLoaded) return;
+
+  try {
+    let url = `/rest/v1/notes?user_id=eq.${userId}&order=note_date.desc,created_at.desc&limit=${PAGE_SIZE}&offset=${notesOffset}`;
+    if (currentFilter !== "all") url += `&content_type=eq.${currentFilter}`;
+    // Select only what we need
+    url += "&select=id,content,content_type,note_date,tags,created_at,processed_at";
+
+    const res = await supaFetch(url);
+    if (!res.ok) throw new Error(await res.text());
+
+    const notes = await res.json();
+    if (reset) list.innerHTML = "";
+
+    // Remove load-more if present
+    list.querySelector(".load-more-row")?.remove();
+
+    if (notes.length === 0 && reset) {
+      list.innerHTML = `<div class="history-empty"><div style="font-size:24px">📭</div><div>No notes yet</div></div>`;
+      return;
+    }
+
+    notes.forEach(note => list.appendChild(buildNoteCard(note)));
+    notesOffset += notes.length;
+
+    if (notes.length === PAGE_SIZE) {
+      const row = document.createElement("div");
+      row.className = "load-more-row";
+      row.innerHTML = `<button class="btn btn-ghost" id="load-more-btn">Load more</button>`;
+      list.appendChild(row);
+      document.getElementById("load-more-btn").addEventListener("click", () => loadNotes(false));
+    } else {
+      allNotesLoaded = true;
+    }
+
+  } catch (err) {
+    if (reset) list.innerHTML = `<div class="history-empty"><div>Error: ${escapeHtml(err.message)}</div></div>`;
+    toast(err.message, "error");
+  }
+}
+
+function buildNoteCard(note) {
+  const card = document.createElement("div");
+  card.className = "note-card";
+  card.dataset.id = note.id;
+
+  const typeClass = `type-${note.content_type || "free"}`;
+  const typeLabel = note.content_type || "free";
+  const isUnprocessed = !note.processed_at;
+  const tagsHtml = (note.tags || []).slice(0, 5).map(t =>
+    `<span class="note-tag">${escapeHtml(t)}</span>`
+  ).join("");
+
+  card.innerHTML = `
+    <div class="note-card-header">
+      <span class="note-card-date">${fmtDate(note.note_date || note.created_at)}</span>
+      <span class="note-card-type ${typeClass}">${isUnprocessed ? "pending" : typeLabel}</span>
+    </div>
+    <div class="note-card-content">${escapeHtml(note.content)}</div>
+    ${tagsHtml ? `<div class="note-card-tags">${tagsHtml}</div>` : ""}
+  `;
+
+  card.addEventListener("click", () => openEditModal(note));
+  return card;
+}
+
+// ══════════════════════════════════════════════════════════
+// EDIT MODAL
+// ══════════════════════════════════════════════════════════
+const editModal  = document.getElementById("edit-modal");
+const editTA     = document.getElementById("edit-textarea");
+
+function openEditModal(note) {
+  editingNoteId = note.id;
+  editTA.value  = note.content;
+  document.getElementById("edit-modal-date").textContent = fmtDate(note.note_date || note.created_at);
+  editModal.classList.add("open");
+  setTimeout(() => { editTA.focus(); editTA.setSelectionRange(editTA.value.length, editTA.value.length); }, 50);
+}
+
+function closeEditModal() {
+  editModal.classList.remove("open");
+  editingNoteId = null;
+}
+
+document.getElementById("edit-cancel-btn").addEventListener("click", closeEditModal);
+
+editModal.addEventListener("click", e => {
+  if (e.target === editModal) closeEditModal();
+});
+
+document.getElementById("edit-save-btn").addEventListener("click", async () => {
+  const content = editTA.value.trim();
+  if (!content) { toast("Note cannot be empty", "error"); return; }
+  if (!editingNoteId) return;
+
+  const btn = document.getElementById("edit-save-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  try {
+    const res = await supaFetch(`/rest/v1/notes?id=eq.${editingNoteId}&user_id=eq.${userId}`, {
+      method: "PATCH",
+      headers: { "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        content,
+        modified_at: new Date().toISOString(),
+        // Reset processing so it re-classifies on next batch
+        processed_at: null,
+        content_type: "free",
+      }),
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    // Re-queue embed job
+    await supaFetch("/rest/v1/processing_queue", {
+      method: "POST",
+      body: JSON.stringify([
+        { note_id: editingNoteId, user_id: userId, job_type: "embed",   status: "pending" },
+        { note_id: editingNoteId, user_id: userId, job_type: "extract", status: "pending" },
+      ]),
+    });
+
+    toast("Note updated ✓");
+    closeEditModal();
+    // Refresh history if on that tab
+    if (document.getElementById("tab-history").classList.contains("active")) {
+      loadNotes(true);
+    }
+
+  } catch (err) {
+    toast(err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save";
+  }
+});
+
+document.getElementById("edit-delete-btn").addEventListener("click", async () => {
+  if (!editingNoteId) return;
+  if (!confirm("Delete this note? This cannot be undone.")) return;
+
+  const btn = document.getElementById("edit-delete-btn");
+  btn.disabled = true;
+  btn.textContent = "Deleting…";
+
+  try {
+    const res = await supaFetch(
+      `/rest/v1/notes?id=eq.${editingNoteId}&user_id=eq.${userId}`,
+      { method: "DELETE" }
+    );
+    if (!res.ok) throw new Error(await res.text());
+
+    toast("Note deleted");
+    closeEditModal();
+    if (document.getElementById("tab-history").classList.contains("active")) {
+      loadNotes(true);
+    }
+
+  } catch (err) {
+    toast(err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Delete";
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+// Boot
+// ══════════════════════════════════════════════════════════
+boot();
+</script>
+</body>
+</html>
