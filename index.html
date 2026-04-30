@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Theda — The Digital Assistant</title>
+<title>Thea — The Digital Assistant</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -239,22 +239,41 @@ body {
 }
 #note-textarea::placeholder { color: var(--text-dim); }
 
-/* ── @ mention dropdown ── */
+/* ── Mention dropdown (@ contacts & # nodes) ── */
 .mention-dropdown {
-  position: absolute;
-  left: 12px; right: 12px;
+  position: fixed; /* fixed so it escapes textarea stacking context */
   background: var(--surface2);
   border: 1px solid var(--border-hover);
   border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  z-index: 100;
-  max-height: 180px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  z-index: 500;
+  max-height: 200px;
   overflow-y: auto;
   display: none;
+  min-width: 220px;
 }
 .mention-dropdown.open { display: block; }
+
+/* header chip showing trigger type */
+.mention-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.mention-header-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.mention-header-at  { color: var(--accent); }
+.mention-header-hash { color: #a78bfa; }
+
 .mention-item {
-  padding: 10px 14px;
+  padding: 9px 14px;
   cursor: pointer;
   border-bottom: 1px solid var(--border);
   transition: background 0.1s;
@@ -264,6 +283,7 @@ body {
 }
 .mention-item:last-child { border-bottom: none; }
 .mention-item:hover, .mention-item.focused { background: var(--accent-dim); }
+.mention-item.focused-node { background: rgba(167,139,250,0.1); }
 .mention-name { font-size: 13px; color: var(--text); font-weight: 500; }
 .mention-sub {
   font-family: var(--mono);
@@ -275,6 +295,31 @@ body {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mention-loading::before {
+  content: "";
+  display: inline-block;
+  width: 10px; height: 10px;
+  border: 1.5px solid var(--border-hover);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+.mention-empty {
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.mention-error {
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--danger);
 }
 
 .write-toolbar {
@@ -773,11 +818,11 @@ body {
       <div class="note-editor-wrap">
         <textarea
           id="note-textarea"
-          placeholder="What's on your mind? Type @ to mention a contact…"
+          placeholder="What's on your mind? Use @ for contacts, # for nodes…"
           spellcheck="true"
         ></textarea>
 
-        <!-- @ mention dropdown -->
+        <!-- mention dropdown (shared for @ and #) -->
         <div class="mention-dropdown" id="mention-dropdown"></div>
       </div>
 
@@ -848,7 +893,7 @@ body {
       <span class="modal-meta" id="edit-modal-date"></span>
     </div>
     <div class="modal-body">
-      <textarea id="edit-textarea" spellcheck="true"></textarea>
+      <textarea id="edit-textarea" spellcheck="true" placeholder="Edit your note… Use @ for contacts, # for nodes"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger"  id="edit-delete-btn">Delete</button>
@@ -867,33 +912,58 @@ body {
 const SUPABASE_URL = "https://zixysyctnynphstyvvgx.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppeHlzeWN0bnlucGhzdHl2dngiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NDk0OTQ0MCwiZXhwIjoyMDkwNTI1NDQwfQ.Ilu-T02HJfT0GnMzalvfxdQHLXBRkHxDJkqriFUEPJo";
 const AUTH_EDGE   = `${SUPABASE_URL}/functions/v1/miniapp-auth`;
+const SEARCH_EDGE = `${SUPABASE_URL}/functions/v1/miniapp-search`;
 const QUERY_EDGE  = `${SUPABASE_URL}/functions/v1/query-memory`;
 
 // ══════════════════════════════════════════════════════════
 // State
 // ══════════════════════════════════════════════════════════
-let accessToken   = null;
-let userId        = null;
-let displayName   = null;
-let timezone      = "Africa/Kampala";
-let currentFilter = "all";
-let notesOffset   = 0;
-const PAGE_SIZE   = 20;
+let accessToken    = null;
+let tokenExpiresAt = 0;       // unix seconds — for refresh guard
+let userId         = null;
+let displayName    = null;
+let timezone       = "Africa/Kampala";
+let currentFilter  = "all";
+let notesOffset    = 0;
+const PAGE_SIZE    = 20;
 let allNotesLoaded = false;
 let editingNoteId  = null;
-let mentionQuery   = "";
-let mentionStart   = -1;
-let mentionFocusIdx = -1;
 
-// Token-ready gate: any call that needs auth awaits this before proceeding
+// Token-ready gate
 let _tokenResolve;
 const tokenReady = new Promise(res => { _tokenResolve = res; });
 
 // ══════════════════════════════════════════════════════════
 // Helpers
 // ══════════════════════════════════════════════════════════
+
+// Re-auth silently if token expires within 5 minutes
+async function maybeRefreshToken() {
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (tokenExpiresAt && nowSec > tokenExpiresAt - 300) {
+    try {
+      const tg = window.Telegram?.WebApp;
+      const initData = tg?.initData || "";
+      if (!initData) return; // can't refresh without initData
+      const res  = await fetch(AUTH_EDGE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.access_token) {
+          accessToken    = data.access_token;
+          tokenExpiresAt = data.expires_at ?? (nowSec + 3600);
+        }
+      }
+    } catch (_) { /* silent — we'll fail on the actual request */ }
+  }
+}
+
 async function supaFetch(path, opts = {}) {
-  await tokenReady; // wait until auth is complete before any REST call
+  await tokenReady;
+  await maybeRefreshToken();
   return fetch(SUPABASE_URL + path, {
     ...opts,
     headers: {
@@ -964,10 +1034,11 @@ async function boot() {
       return;
     }
 
-    accessToken = data.access_token;
-    userId      = data.user_id;
-    displayName = data.display_name;
-    timezone    = data.timezone || "Africa/Kampala";
+    accessToken    = data.access_token;
+    tokenExpiresAt = data.expires_at ?? (Math.floor(Date.now() / 1000) + 3600);
+    userId         = data.user_id;
+    displayName    = data.display_name;
+    timezone       = data.timezone || "Africa/Kampala";
 
     // Resolve the gate — all supaFetch calls waiting on this can now proceed
     _tokenResolve();
@@ -1020,11 +1091,11 @@ const saveConfirm = document.getElementById("save-confirm");
 noteTA.addEventListener("input", () => {
   const wc = wordCount(noteTA.value);
   wordCountEl.textContent = `${wc} word${wc === 1 ? "" : "s"}`;
-  handleMentionInput();
   saveConfirm.style.display = "none";
 });
 
-noteTA.addEventListener("keydown", handleMentionKeydown);
+// Attach unified mention engine (@contacts, #nodes) to write textarea
+attachMentionEngine(noteTA);
 
 document.getElementById("clear-btn").addEventListener("click", () => {
   if (noteTA.value.trim() === "") return;
@@ -1032,14 +1103,20 @@ document.getElementById("clear-btn").addEventListener("click", () => {
   noteTA.value = "";
   wordCountEl.textContent = "0 words";
   saveConfirm.style.display = "none";
-  closeMentionDropdown();
+  // Clear token map too
+  getMState(noteTA).tokenMap = [];
+  closeMentionDropdown(noteTA);
 });
 
 document.getElementById("save-btn").addEventListener("click", saveNote);
 
 async function saveNote() {
-  const content = noteTA.value.trim();
-  if (!content) { toast("Nothing to save", "error"); return; }
+  const rawContent = noteTA.value.trim();
+  if (!rawContent) { toast("Nothing to save", "error"); return; }
+
+  // Serialise any @mentions and #nodes to structured tokens
+  const ms = getMState(noteTA);
+  const content = serialiseMentions(rawContent, ms.tokenMap);
 
   const btn = document.getElementById("save-btn");
   btn.disabled = true;
@@ -1048,7 +1125,6 @@ async function saveNote() {
   try {
     const noteDate = todayInTz(timezone);
 
-    // Insert note
     const res = await supaFetch("/rest/v1/notes", {
       method: "POST",
       headers: { "Prefer": "return=representation", "Accept": "application/json" },
@@ -1071,7 +1147,6 @@ async function saveNote() {
     const noteId = Array.isArray(saved) ? saved[0]?.id : saved?.id;
     if (!noteId) throw new Error("Note saved but no ID returned");
 
-    // Queue embed + extract jobs
     await supaFetch("/rest/v1/processing_queue", {
       method: "POST",
       headers: { "Prefer": "return=minimal" },
@@ -1081,8 +1156,9 @@ async function saveNote() {
       ]),
     });
 
-    // Clear editor
+    // Clear editor and token map
     noteTA.value = "";
+    ms.tokenMap = [];
     wordCountEl.textContent = "0 words";
     saveConfirm.style.display = "block";
     setTimeout(() => { saveConfirm.style.display = "none"; }, 3500);
@@ -1096,149 +1172,329 @@ async function saveNote() {
   }
 }
 
-// ── @ mention autocomplete ────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// UNIFIED MENTION ENGINE  (@contacts  #nodes)
+// ══════════════════════════════════════════════════════════
+//
+// Token map: stores resolved mentions so we can serialise
+// the display text + uuid at save time.
+// Structure: Array<{ trigger, start, end, display, id, type }>
+// (start/end track positions in the *raw* textarea value)
+//
+// On save, we walk the raw text and replace each tracked
+// mention with the structured token.
+// ──────────────────────────────────────────────────────────
+
+const TRIGGERS = { "@": "contacts", "#": "nodes" };
+
+// Per-editor state (keyed by textarea element)
+const mentionState = new WeakMap();
+
+function getMState(ta) {
+  if (!mentionState.has(ta)) {
+    mentionState.set(ta, {
+      active:       false,
+      trigger:      "",       // "@" or "#"
+      triggerStart: -1,       // index in ta.value
+      query:        "",
+      focusIdx:     -1,
+      debounce:     null,
+      tokenMap:     [],       // resolved mentions for this editor
+    });
+  }
+  return mentionState.get(ta);
+}
+
+// Single shared dropdown element
 const mentionDD = document.getElementById("mention-dropdown");
-let mentionSearchTimer;
+let mentionTargetTA = null;  // which textarea owns the dropdown right now
 
-function handleMentionInput() {
-  const ta = noteTA;
+// ── Attach to a textarea ─────────────────────────────────
+function attachMentionEngine(ta) {
+  ta.addEventListener("input",   () => onMentionInput(ta));
+  ta.addEventListener("keydown", (e) => onMentionKeydown(ta, e));
+  ta.addEventListener("blur",    (e) => {
+    // small delay so click on dropdown item fires first
+    setTimeout(() => {
+      if (mentionTargetTA === ta) closeMentionDropdown(ta);
+    }, 150);
+  });
+}
+
+// ── Input handler ─────────────────────────────────────────
+function onMentionInput(ta) {
+  const ms  = getMState(ta);
   const pos = ta.selectionStart;
-  const text = ta.value.substring(0, pos);
-  const atIdx = text.lastIndexOf("@");
+  const before = ta.value.substring(0, pos);
 
-  if (atIdx === -1) { closeMentionDropdown(); return; }
+  // Find the last trigger character that hasn't been closed by whitespace
+  let foundTrigger = "";
+  let foundIdx = -1;
 
-  const fragment = text.substring(atIdx + 1);
-  // Only trigger if we're right after @ with no whitespace
-  if (/\s/.test(fragment) && fragment.length > 0) {
-    closeMentionDropdown();
+  for (const ch of Object.keys(TRIGGERS)) {
+    const idx = before.lastIndexOf(ch);
+    if (idx === -1) continue;
+    const fragment = before.substring(idx + 1);
+    // Valid if no whitespace between trigger and cursor
+    if (!/\s/.test(fragment)) {
+      if (idx > foundIdx) { foundIdx = idx; foundTrigger = ch; }
+    }
+  }
+
+  if (foundIdx === -1) {
+    closeMentionDropdown(ta);
     return;
   }
 
-  mentionStart = atIdx;
-  mentionQuery = fragment;
+  const query = before.substring(foundIdx + 1);
 
-  clearTimeout(mentionSearchTimer);
-  if (fragment.length === 0) {
-    // Show immediately with a prompt
-    showMentionLoading();
-    mentionSearchTimer = setTimeout(() => searchContacts(""), 0);
-  } else {
-    showMentionLoading();
-    mentionSearchTimer = setTimeout(() => searchContacts(fragment), 200);
-  }
+  ms.active       = true;
+  ms.trigger      = foundTrigger;
+  ms.triggerStart = foundIdx;
+  ms.query        = query;
+  ms.focusIdx     = -1;
+  mentionTargetTA = ta;
+
+  clearTimeout(ms.debounce);
+  showMentionState(ta, "loading");
+  ms.debounce = setTimeout(() => runMentionSearch(ta), query.length === 0 ? 0 : 200);
 }
 
-function handleMentionKeydown(e) {
-  if (!mentionDD.classList.contains("open")) return;
+// ── Keyboard handler ──────────────────────────────────────
+function onMentionKeydown(ta, e) {
+  const ms = getMState(ta);
+  if (!ms.active || !mentionDD.classList.contains("open")) return;
 
   const items = mentionDD.querySelectorAll(".mention-item");
   if (e.key === "ArrowDown") {
     e.preventDefault();
-    mentionFocusIdx = Math.min(mentionFocusIdx + 1, items.length - 1);
-    renderMentionFocus(items);
+    ms.focusIdx = Math.min(ms.focusIdx + 1, items.length - 1);
+    renderMentionFocus(items, ms);
   } else if (e.key === "ArrowUp") {
     e.preventDefault();
-    mentionFocusIdx = Math.max(mentionFocusIdx - 1, 0);
-    renderMentionFocus(items);
+    ms.focusIdx = Math.max(ms.focusIdx - 1, 0);
+    renderMentionFocus(items, ms);
   } else if (e.key === "Enter" || e.key === "Tab") {
-    if (mentionFocusIdx >= 0 && items[mentionFocusIdx]) {
-      e.preventDefault();
-      items[mentionFocusIdx].click();
-    }
+    const focused = mentionDD.querySelector(".mention-item.focused");
+    if (focused) { e.preventDefault(); focused.click(); }
   } else if (e.key === "Escape") {
-    closeMentionDropdown();
+    e.preventDefault();
+    closeMentionDropdown(ta);
   }
 }
 
-function renderMentionFocus(items) {
+function renderMentionFocus(items, ms) {
   items.forEach((item, i) => {
-    item.classList.toggle("focused", i === mentionFocusIdx);
+    item.classList.toggle("focused", i === ms.focusIdx);
   });
 }
 
-function showMentionLoading() {
-  mentionDD.innerHTML = `<div class="mention-loading">Searching contacts…</div>`;
-  positionMentionDropdown();
+// ── Loading / empty / error states ───────────────────────
+function showMentionState(ta, state, message = "") {
+  const ms = getMState(ta);
+  const label = ms.trigger === "@" ? "Contacts" : "Nodes";
+  const headerClass = ms.trigger === "@" ? "mention-header-at" : "mention-header-hash";
+
+  let inner = "";
+  if (state === "loading") {
+    inner = `<div class="mention-loading">Searching ${label.toLowerCase()}…</div>`;
+  } else if (state === "empty") {
+    inner = `<div class="mention-empty">No ${label.toLowerCase()} found</div>`;
+  } else if (state === "error") {
+    inner = `<div class="mention-error">⚠ ${message || "Search failed"}</div>`;
+  }
+
+  mentionDD.innerHTML = `
+    <div class="mention-header">
+      <span class="mention-header-label ${headerClass}">${ms.trigger} ${label}</span>
+    </div>
+    ${inner}
+  `;
+  positionMentionDropdown(ta);
   mentionDD.classList.add("open");
 }
 
-async function searchContacts(q) {
+// ── Run search via edge function ──────────────────────────
+async function runMentionSearch(ta) {
+  const ms = getMState(ta);
+  if (!ms.active) return;
+
+  await tokenReady;
+  await maybeRefreshToken();
+
   try {
-    const res = await supaFetch(
-      `/rest/v1/rpc/search_contacts`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({ p_user_id: userId, p_query: q || "a", p_limit: 6 }),
-      }
-    );
+    const res = await fetch(SEARCH_EDGE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        type:  TRIGGERS[ms.trigger],
+        query: ms.query,
+        limit: 8,
+      }),
+    });
+
+    if (!ms.active) return; // user may have closed while awaiting
+
     if (!res.ok) {
-      console.error("search_contacts failed:", res.status, await res.text());
-      closeMentionDropdown();
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      showMentionState(ta, "error", err.error);
       return;
     }
+
     const results = await res.json();
-    renderMentionResults(results);
+    renderMentionResults(ta, results);
+
   } catch (err) {
-    console.error("search_contacts error:", err);
-    closeMentionDropdown();
+    if (ms.active) showMentionState(ta, "error", err.message);
   }
 }
 
-function renderMentionResults(contacts) {
-  if (!contacts || contacts.length === 0) {
-    mentionDD.innerHTML = `<div class="mention-loading">No contacts found</div>`;
+// ── Render results ────────────────────────────────────────
+function renderMentionResults(ta, results) {
+  const ms = getMState(ta);
+  const label = ms.trigger === "@" ? "Contacts" : "Nodes";
+  const headerClass = ms.trigger === "@" ? "mention-header-at" : "mention-header-hash";
+
+  if (!results || results.length === 0) {
+    showMentionState(ta, "empty");
     return;
   }
-  mentionFocusIdx = -1;
-  mentionDD.innerHTML = contacts.map((c, i) => {
-    const sub = [c.company, c.role].filter(Boolean).join(" · ") ||
-                (c.phones?.[0]?.number ?? "") ||
-                (c.relationship_type ?? "");
-    return `<div class="mention-item" data-name="${escapeHtml(c.full_name)}" data-idx="${i}">
-      <div class="mention-name">${escapeHtml(c.full_name)}</div>
-      ${sub ? `<div class="mention-sub">${escapeHtml(sub)}</div>` : ""}
-    </div>`;
-  }).join("");
+
+  ms.focusIdx = -1;
+
+  const itemsHtml = results.map((r, i) => `
+    <div class="mention-item" data-idx="${i}" data-id="${escapeHtml(r.id)}" data-name="${escapeHtml(r.name)}">
+      <div class="mention-name">${escapeHtml(r.name)}</div>
+      ${r.sub ? `<div class="mention-sub">${escapeHtml(r.sub)}</div>` : ""}
+    </div>
+  `).join("");
+
+  mentionDD.innerHTML = `
+    <div class="mention-header">
+      <span class="mention-header-label ${headerClass}">${ms.trigger} ${label}</span>
+    </div>
+    ${itemsHtml}
+  `;
 
   mentionDD.querySelectorAll(".mention-item").forEach(item => {
-    item.addEventListener("click", () => insertMention(item.dataset.name));
+    item.addEventListener("mousedown", (e) => {
+      e.preventDefault(); // prevent textarea blur
+      insertMention(ta, item.dataset.id, item.dataset.name);
+    });
   });
-  positionMentionDropdown();
+
+  positionMentionDropdown(ta);
   mentionDD.classList.add("open");
 }
 
-function positionMentionDropdown() {
-  // Position above the cursor line — simplified: always show above toolbar
-  const wrap = noteTA.parentElement;
-  const wrapH = wrap.offsetHeight;
-  const taH   = noteTA.offsetHeight;
-  mentionDD.style.bottom = `${taH - noteTA.scrollTop}px`;
-  mentionDD.style.top = "auto";
-}
+// ── Insert mention into textarea ──────────────────────────
+// In the textarea the user sees: @John Doe  or  #Project X
+// The tokenMap records the uuid so we can serialise on save.
+function insertMention(ta, id, displayName) {
+  const ms = getMState(ta);
+  const trigger  = ms.trigger;
+  const before   = ta.value.substring(0, ms.triggerStart);
+  const after    = ta.value.substring(ta.selectionStart);
+  const inserted = `${trigger}${displayName}`;
 
-function insertMention(name) {
-  const ta = noteTA;
-  const before = ta.value.substring(0, mentionStart);
-  const after  = ta.value.substring(ta.selectionStart);
-  const inserted = `@${name}`;
-  ta.value = before + inserted + " " + after;
-  const pos = before.length + inserted.length + 1;
-  ta.setSelectionRange(pos, pos);
+  ta.value = before + inserted + "\u00A0" + after; // non-breaking space as separator
+  const newPos = before.length + inserted.length + 1;
+  ta.setSelectionRange(newPos, newPos);
   ta.focus();
-  closeMentionDropdown();
-  wordCountEl.textContent = `${wordCount(ta.value)} words`;
+
+  // Record in token map
+  ms.tokenMap.push({
+    trigger,
+    displayText: displayName,
+    id,
+    type: TRIGGERS[trigger],
+    // We'll re-detect positions at save time via display text matching
+  });
+
+  closeMentionDropdown(ta);
+
+  // Update word count if this is the main editor
+  if (ta === noteTA) {
+    wordCountEl.textContent = `${wordCount(ta.value)} word${wordCount(ta.value) === 1 ? "" : "s"}`;
+  }
 }
 
-function closeMentionDropdown() {
+// ── Close dropdown ────────────────────────────────────────
+function closeMentionDropdown(ta) {
+  if (ta) {
+    const ms = getMState(ta);
+    ms.active       = false;
+    ms.trigger      = "";
+    ms.triggerStart = -1;
+    ms.query        = "";
+    ms.focusIdx     = -1;
+    clearTimeout(ms.debounce);
+  }
   mentionDD.classList.remove("open");
-  mentionStart  = -1;
-  mentionQuery  = "";
-  mentionFocusIdx = -1;
+  mentionTargetTA = null;
+}
+
+// ── Position dropdown using viewport geometry ─────────────
+function positionMentionDropdown(ta) {
+  const vp        = window.visualViewport;
+  const vpHeight  = vp ? vp.height  : window.innerHeight;
+  const vpOffsetY = vp ? vp.offsetTop : 0;
+  const vpOffsetX = vp ? vp.offsetLeft : 0;
+
+  const taRect    = ta.getBoundingClientRect();
+  const ddWidth   = Math.min(Math.max(taRect.width - 16, 220), 340);
+  const ddMaxH    = 200;
+
+  // Prefer upward (above keyboard on mobile)
+  const spaceAbove = taRect.top - vpOffsetY;
+  const spaceBelow = vpHeight - (taRect.bottom - vpOffsetY);
+
+  let top, left;
+  left = Math.max(8, taRect.left + vpOffsetX + 8);
+
+  if (spaceAbove > ddMaxH || spaceAbove > spaceBelow) {
+    // pop up — anchor to bottom of dropdown at top of textarea
+    top = taRect.top + vpOffsetY - ddMaxH - 4;
+    top = Math.max(vpOffsetY + 4, top);
+  } else {
+    // pop down
+    top = taRect.bottom + vpOffsetY + 4;
+  }
+
+  mentionDD.style.position = "fixed";
+  mentionDD.style.left     = `${left}px`;
+  mentionDD.style.top      = `${top}px`;
+  mentionDD.style.width    = `${ddWidth}px`;
+  mentionDD.style.maxHeight = `${ddMaxH}px`;
+}
+
+// ── Serialise mentions at save time ──────────────────────
+// Replaces @Display Name with @[Display Name](contact:uuid)
+// and #Node Name with #[Node Name](node:uuid)
+function serialiseMentions(rawText, tokenMap) {
+  if (!tokenMap || tokenMap.length === 0) return rawText;
+
+  let result = rawText;
+
+  // Sort by longest name first to avoid partial replacements
+  const sorted = [...tokenMap].sort((a, b) => b.displayText.length - a.displayText.length);
+
+  for (const token of sorted) {
+    const plain = `${token.trigger}${token.displayText}`;
+    const structured = `${token.trigger}[${token.displayText}](${token.type === "contacts" ? "contact" : "node"}:${token.id})`;
+    // Replace only the first occurrence that hasn't already been replaced
+    const re = new RegExp(escapeRegex(plain) + "(?!\\])", "");
+    result = result.replace(re, structured);
+  }
+
+  return result;
+}
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function escapeHtml(s) {
@@ -1423,9 +1679,14 @@ function buildNoteCard(note) {
 const editModal  = document.getElementById("edit-modal");
 const editTA     = document.getElementById("edit-textarea");
 
+// Attach unified mention engine to edit textarea too
+attachMentionEngine(editTA);
+
 function openEditModal(note) {
   editingNoteId = note.id;
   editTA.value  = note.content;
+  // Clear any stale token map from a previous edit session
+  getMState(editTA).tokenMap = [];
   document.getElementById("edit-modal-date").textContent = fmtDate(note.note_date || note.created_at);
   editModal.classList.add("open");
   setTimeout(() => { editTA.focus(); editTA.setSelectionRange(editTA.value.length, editTA.value.length); }, 50);
@@ -1433,6 +1694,7 @@ function openEditModal(note) {
 
 function closeEditModal() {
   editModal.classList.remove("open");
+  closeMentionDropdown(editTA);
   editingNoteId = null;
 }
 
@@ -1443,9 +1705,13 @@ editModal.addEventListener("click", e => {
 });
 
 document.getElementById("edit-save-btn").addEventListener("click", async () => {
-  const content = editTA.value.trim();
-  if (!content) { toast("Note cannot be empty", "error"); return; }
+  const rawContent = editTA.value.trim();
+  if (!rawContent) { toast("Note cannot be empty", "error"); return; }
   if (!editingNoteId) return;
+
+  // Serialise any new @mention or #node tokens added during editing
+  const ms = getMState(editTA);
+  const content = serialiseMentions(rawContent, ms.tokenMap);
 
   const btn = document.getElementById("edit-save-btn");
   btn.disabled = true;
@@ -1458,7 +1724,6 @@ document.getElementById("edit-save-btn").addEventListener("click", async () => {
       body: JSON.stringify({
         content,
         modified_at: new Date().toISOString(),
-        // Reset processing so it re-classifies on next batch
         processed_at: null,
         content_type: "free",
       }),
@@ -1466,7 +1731,6 @@ document.getElementById("edit-save-btn").addEventListener("click", async () => {
 
     if (!res.ok) throw new Error(await res.text());
 
-    // Re-queue embed job
     await supaFetch("/rest/v1/processing_queue", {
       method: "POST",
       body: JSON.stringify([
@@ -1477,7 +1741,6 @@ document.getElementById("edit-save-btn").addEventListener("click", async () => {
 
     toast("Note updated ✓");
     closeEditModal();
-    // Refresh history if on that tab
     if (document.getElementById("tab-history").classList.contains("active")) {
       loadNotes(true);
     }
