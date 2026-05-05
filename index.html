@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Thea — The Digital Assistant</title>
+<title>Thea — Digital Assistant</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -26,7 +26,6 @@
   --danger:        #f87171;
   --danger-dim:    rgba(248,113,113,0.10);
   --warn:          #fbbf24;
-  --warn-dim:      rgba(251,191,36,0.10);
   --mono:          'IBM Plex Mono', monospace;
   --sans:          'IBM Plex Sans', sans-serif;
   --radius:        6px;
@@ -34,7 +33,6 @@
 }
 
 html, body { height: 100%; overflow: hidden; }
-
 body {
   background: var(--bg);
   color: var(--text);
@@ -46,854 +44,398 @@ body {
   height: 100dvh;
 }
 
-/* ── Loading screen ── */
+/* ── Loading ── */
 #loading {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 16px;
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px;
 }
 .loading-logo {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--accent);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent);
 }
 .loading-logo span {
-  display: block;
-  font-family: var(--sans);
-  font-size: 26px;
-  font-weight: 300;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  margin-top: 2px;
+  display: block; font-family: var(--sans); font-size: 26px; font-weight: 300;
+  letter-spacing: -0.02em; color: var(--text); margin-top: 2px;
 }
 .spinner {
-  width: 20px; height: 20px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
+  width: 20px; height: 20px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Error screen ── */
+/* ── Error ── */
 #error-screen {
-  flex: 1;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px;
-  flex-direction: column;
-  gap: 12px;
-  text-align: center;
+  flex: 1; display: none; align-items: center; justify-content: center;
+  padding: 32px 24px; flex-direction: column; gap: 12px; text-align: center;
 }
 .error-icon { font-size: 32px; }
 .error-title { font-family: var(--mono); font-size: 13px; color: var(--danger); }
 .error-msg { font-size: 13px; color: var(--text-mid); line-height: 1.6; max-width: 280px; }
 
 /* ── App shell ── */
-#app {
-  display: none;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
+#app { display: none; flex-direction: column; height: 100%; overflow: hidden; }
 
-/* ── Top bar ── */
+/* ── Topbar ── */
 .topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  background: var(--surface); flex-shrink: 0;
 }
 .topbar-brand {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  line-height: 1.2;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-dim); line-height: 1.2;
 }
 .topbar-brand strong {
-  display: block;
-  font-family: var(--sans);
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--accent);
-  letter-spacing: 0;
-  text-transform: none;
+  display: block; font-family: var(--sans); font-size: 15px; font-weight: 500;
+  color: var(--accent); letter-spacing: 0; text-transform: none;
 }
-.topbar-user {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  text-align: right;
-}
+.topbar-user { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-align: right; }
 
-/* ── Tab bar ── */
+/* ── Tabs ── */
 .tabbar {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
+  display: flex; border-bottom: 1px solid var(--border);
+  background: var(--surface); flex-shrink: 0;
 }
 .tab-btn {
-  flex: 1;
-  padding: 10px 0;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-dim);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  flex: 1; padding: 10px 0; background: none; border: none;
+  border-bottom: 2px solid transparent; color: var(--text-dim);
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.10em;
+  text-transform: uppercase; cursor: pointer; transition: color 0.15s, border-color 0.15s;
 }
 .tab-btn:hover { color: var(--text-mid); }
-.tab-btn.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-/* ── Tab panels ── */
-.tab-panel {
-  display: none;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-}
+.tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
 .tab-panel.active { display: flex; }
 
-/* ════════════════════════════════════
-   WRITE TAB
-════════════════════════════════════ */
-.write-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
+/* ════ WRITE TAB ════ */
 .write-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px 0;
-  flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px 0; flex-shrink: 0;
 }
-.write-date {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  letter-spacing: 0.08em;
-}
-.write-tag-pills {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  flex: 1;
-}
-.tag-pill {
-  font-family: var(--mono);
-  font-size: 9px;
-  padding: 2px 7px;
-  border-radius: 2px;
-  background: var(--accent-dim);
-  color: var(--accent);
-  border: 1px solid var(--accent-border);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
+.write-date { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.08em; }
 
-.note-editor-wrap {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
+.note-editor-wrap { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
 #note-textarea {
-  flex: 1;
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  resize: none;
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.65;
-  padding: 14px 16px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  flex: 1; width: 100%; background: transparent; border: none; outline: none;
+  resize: none; color: var(--text); font-family: var(--sans); font-size: 15px;
+  line-height: 1.65; padding: 14px 16px; overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 #note-textarea::placeholder { color: var(--text-dim); }
 
-/* ── Mention dropdown (@ contacts & # nodes) ── */
+/* ── Mention dropdown ── */
 .mention-dropdown {
-  position: fixed; /* fixed so it escapes textarea stacking context */
-  background: var(--surface2);
-  border: 1px solid var(--border-hover);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-  z-index: 500;
-  max-height: 200px;
-  overflow-y: auto;
-  display: none;
-  min-width: 220px;
+  position: fixed; background: var(--surface2); border: 1px solid var(--border-hover);
+  border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 500;
+  max-height: 200px; overflow-y: auto; display: none; min-width: 220px;
 }
 .mention-dropdown.open { display: block; }
-
-/* header chip showing trigger type */
 .mention-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px 4px;
-  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px 4px; border-bottom: 1px solid var(--border);
 }
-.mention-header-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-.mention-header-at  { color: var(--accent); }
+.mention-header-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-dim); }
+.mention-header-at   { color: var(--accent); }
 .mention-header-hash { color: #a78bfa; }
-
 .mention-item {
-  padding: 9px 14px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.1s;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--border);
+  transition: background 0.1s; display: flex; flex-direction: column; gap: 2px;
 }
 .mention-item:last-child { border-bottom: none; }
 .mention-item:hover, .mention-item.focused { background: var(--accent-dim); }
 .mention-item.focused-node { background: rgba(167,139,250,0.1); }
 .mention-name { font-size: 13px; color: var(--text); font-weight: 500; }
-.mention-sub {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-dim);
-}
+.mention-sub  { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
 .mention-loading {
-  padding: 12px 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-dim);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  padding: 12px 14px; font-family: var(--mono); font-size: 11px;
+  color: var(--text-dim); display: flex; align-items: center; gap: 8px;
 }
 .mention-loading::before {
-  content: "";
-  display: inline-block;
-  width: 10px; height: 10px;
-  border: 1.5px solid var(--border-hover);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  flex-shrink: 0;
+  content: ""; display: inline-block; width: 10px; height: 10px;
+  border: 1.5px solid var(--border-hover); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.6s linear infinite; flex-shrink: 0;
 }
-.mention-empty {
-  padding: 12px 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-dim);
+.mention-empty { padding: 12px 14px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.mention-error { padding: 10px 14px; font-family: var(--mono); font-size: 11px; color: var(--danger); }
+
+.save-confirm {
+  padding: 8px 16px; background: var(--accent-dim); border-top: 1px solid var(--accent-border);
+  font-family: var(--mono); font-size: 11px; color: var(--accent); text-align: center;
+  display: none; flex-shrink: 0; animation: slideDown 0.2s ease;
 }
-.mention-error {
-  padding: 10px 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--danger);
-}
+@keyframes slideDown { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
 
 .write-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px calc(10px + var(--safe-bottom));
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
-  gap: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px calc(10px + var(--safe-bottom)); border-top: 1px solid var(--border);
+  background: var(--surface); flex-shrink: 0; gap: 8px;
 }
-.write-hint {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-dim);
-}
-.write-word-count {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-dim);
-}
+.write-word-count { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
 
 .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 8px 16px;
-  border-radius: var(--radius);
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-  letter-spacing: 0.04em;
+  display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
+  font-size: 11px; padding: 8px 16px; border-radius: var(--radius); border: none;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap; letter-spacing: 0.04em;
 }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-primary {
-  background: var(--accent);
-  color: #0e0f11;
-  font-weight: 500;
-}
+.btn-primary { background: var(--accent); color: #0e0f11; font-weight: 500; }
 .btn-primary:hover:not(:disabled) { background: #6ee7a0; }
-
-.btn-ghost {
-  background: transparent;
-  color: var(--text-mid);
-  border: 1px solid var(--border);
-}
+.btn-ghost { background: transparent; color: var(--text-mid); border: 1px solid var(--border); }
 .btn-ghost:hover:not(:disabled) { border-color: var(--border-hover); color: var(--text); }
-
-.btn-danger {
-  background: var(--danger-dim);
-  color: var(--danger);
-  border: 1px solid rgba(248,113,113,0.2);
-}
+.btn-danger { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(248,113,113,0.2); }
 .btn-danger:hover:not(:disabled) { background: rgba(248,113,113,0.18); }
 
-/* ── Save confirmation ── */
-.save-confirm {
-  padding: 8px 16px;
-  background: var(--accent-dim);
-  border-top: 1px solid var(--accent-border);
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--accent);
-  text-align: center;
-  display: none;
-  flex-shrink: 0;
-  animation: slideDown 0.2s ease;
-}
-@keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-
-/* ════════════════════════════════════
-   ASK TAB
-════════════════════════════════════ */
-.ask-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
+/* ════ ASK TAB ════ */
 .ask-history {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 16px; display: flex; flex-direction: column; gap: 16px;
 }
-
 .ask-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--text-dim);
-  font-size: 13px;
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 8px; color: var(--text-dim); font-size: 13px;
 }
 .ask-empty-icon { font-size: 28px; margin-bottom: 4px; }
-.ask-empty-hint {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
+.ask-empty-hint { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
 .qa-block { display: flex; flex-direction: column; gap: 8px; }
-
 .bubble-q {
-  align-self: flex-end;
-  background: var(--accent-dim);
-  border: 1px solid var(--accent-border);
-  border-radius: 12px 12px 4px 12px;
-  padding: 10px 14px;
-  font-size: 14px;
-  color: var(--text);
-  max-width: 85%;
-  line-height: 1.5;
+  align-self: flex-end; background: var(--accent-dim); border: 1px solid var(--accent-border);
+  border-radius: 12px 12px 4px 12px; padding: 10px 14px; font-size: 14px;
+  color: var(--text); max-width: 85%; line-height: 1.5;
 }
-
 .bubble-a {
-  align-self: flex-start;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px 12px 12px 12px;
-  padding: 12px 14px;
-  font-size: 14px;
-  color: var(--text);
-  max-width: 92%;
-  line-height: 1.65;
+  align-self: flex-start; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px 12px 12px 12px; padding: 12px 14px; font-size: 14px;
+  color: var(--text); max-width: 92%; line-height: 1.65;
 }
-.bubble-a.thinking {
-  color: var(--text-dim);
-  font-family: var(--mono);
-  font-size: 11px;
-}
+.bubble-a.thinking { color: var(--text-dim); font-family: var(--mono); font-size: 11px; }
 .bubble-a .answer-text { white-space: pre-wrap; }
-
 .answer-sources {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; gap: 4px;
 }
 .source-chip {
-  font-family: var(--mono);
-  font-size: 9px;
-  padding: 2px 7px;
-  border-radius: 2px;
-  background: var(--surface2);
-  color: var(--text-dim);
-  border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 9px; padding: 2px 7px; border-radius: 2px;
+  background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border);
 }
-
 .ask-input-bar {
-  display: flex;
-  gap: 8px;
-  padding: 10px 16px calc(10px + var(--safe-bottom));
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
+  display: flex; gap: 8px; padding: 10px 16px calc(10px + var(--safe-bottom));
+  border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0;
   align-items: flex-end;
 }
 #ask-input {
-  flex: 1;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 14px;
-  padding: 9px 12px;
-  outline: none;
-  resize: none;
-  min-height: 38px;
-  max-height: 120px;
-  line-height: 1.4;
-  overflow-y: auto;
-  transition: border-color 0.15s;
+  flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); font-family: var(--sans); font-size: 14px; padding: 9px 12px;
+  outline: none; resize: none; min-height: 38px; max-height: 120px; line-height: 1.4;
+  overflow-y: auto; transition: border-color 0.15s;
 }
 #ask-input:focus { border-color: var(--accent); }
 #ask-input::placeholder { color: var(--text-dim); }
-
 .ask-send-btn {
-  width: 38px; height: 38px;
-  flex-shrink: 0;
-  border-radius: var(--radius);
-  background: var(--accent);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-  color: #0e0f11;
+  width: 38px; height: 38px; flex-shrink: 0; border-radius: var(--radius);
+  background: var(--accent); border: none; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; transition: background 0.15s; color: #0e0f11;
 }
 .ask-send-btn:hover:not(:disabled) { background: #6ee7a0; }
 .ask-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .ask-send-btn svg { width: 16px; height: 16px; fill: currentColor; }
 
-/* ════════════════════════════════════
-   HISTORY TAB
-════════════════════════════════════ */
-.history-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
+/* ════ HISTORY TAB ════ */
 .history-filters {
-  display: flex;
-  gap: 6px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  flex-shrink: 0;
-  -webkit-overflow-scrolling: touch;
+  display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--border);
+  overflow-x: auto; flex-shrink: 0; -webkit-overflow-scrolling: touch;
 }
 .filter-chip {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 4px 10px;
-  border-radius: 100px;
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  background: transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 100px;
+  border: 1px solid var(--border); color: var(--text-dim); background: transparent;
+  cursor: pointer; white-space: nowrap; transition: all 0.15s;
+  letter-spacing: 0.06em; text-transform: uppercase;
 }
 .filter-chip:hover { border-color: var(--border-hover); color: var(--text-mid); }
-.filter-chip.active {
-  background: var(--accent-dim);
-  border-color: var(--accent-border);
-  color: var(--accent);
-}
-
+.filter-chip.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
 .history-list {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;
 }
-
 .history-empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 6px;
-  color: var(--text-dim);
-  font-size: 13px;
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 6px; color: var(--text-dim); font-size: 13px;
 }
-
-.note-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px 14px;
-  cursor: pointer;
+.entry-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px; cursor: pointer;
   transition: border-color 0.15s;
 }
-.note-card:hover { border-color: var(--border-hover); }
-.note-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
+.entry-card:hover { border-color: var(--border-hover); }
+.entry-card-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
 }
-.note-card-date {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-dim);
+.entry-card-date { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+.entry-card-status {
+  font-family: var(--mono); font-size: 9px; padding: 2px 6px;
+  border-radius: 2px; text-transform: uppercase; letter-spacing: 0.06em;
 }
-.note-card-type {
-  font-family: var(--mono);
-  font-size: 9px;
-  padding: 2px 6px;
-  border-radius: 2px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.status-done    { background: rgba(74,222,128,0.1);  color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+.status-pending { background: rgba(251,191,36,0.1);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+.status-miniapp { background: rgba(167,139,250,0.1); color: #a78bfa; border: 1px solid rgba(167,139,250,0.2); }
+.entry-card-content {
+  font-size: 13px; color: var(--text-mid); line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
-.type-journal  { background: rgba(96,165,250,0.1); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
-.type-idea     { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
-.type-meeting  { background: rgba(167,139,250,0.1); color: #a78bfa; border: 1px solid rgba(167,139,250,0.2); }
-.type-event    { background: rgba(249,115,22,0.1); color: #f97316; border: 1px solid rgba(249,115,22,0.2); }
-.type-reference{ background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
-.type-contact  { background: rgba(236,72,153,0.1); color: #ec4899; border: 1px solid rgba(236,72,153,0.2); }
-.type-free     { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+.entry-card-nodes {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+}
+.node-tag {
+  font-family: var(--mono); font-size: 9px; padding: 1px 6px; border-radius: 2px;
+  background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border);
+}
+.load-more-row { display: flex; justify-content: center; padding: 8px 0 4px; }
 
-.note-card-content {
-  font-size: 13px;
-  color: var(--text-mid);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.note-card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-}
-.note-tag {
-  font-family: var(--mono);
-  font-size: 9px;
-  padding: 1px 6px;
-  border-radius: 2px;
-  background: var(--surface2);
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-}
-
-/* Load more */
-.load-more-row {
-  display: flex;
-  justify-content: center;
-  padding: 8px 0 4px;
-}
-
-/* ════════════════════════════════════
-   EDIT MODAL
-════════════════════════════════════ */
+/* ════ EDIT MODAL ════ */
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  z-index: 200;
-  display: none;
-  align-items: flex-end;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
+  display: none; align-items: flex-end;
 }
 .modal-overlay.open { display: flex; }
-
 .modal-sheet {
-  width: 100%;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  border-radius: 14px 14px 0 0;
-  display: flex;
-  flex-direction: column;
-  max-height: 90dvh;
-  animation: slideUp 0.25s ease;
+  width: 100%; background: var(--surface); border-top: 1px solid var(--border);
+  border-radius: 14px 14px 0 0; display: flex; flex-direction: column;
+  max-height: 90dvh; animation: slideUp 0.25s ease;
 }
-@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
+@keyframes slideUp { from { transform:translateY(40px); opacity:0; } to { transform:translateY(0); opacity:1; } }
 .modal-handle {
-  width: 36px; height: 4px;
-  background: var(--border-hover);
-  border-radius: 2px;
-  margin: 10px auto 0;
-  flex-shrink: 0;
+  width: 36px; height: 4px; background: var(--border-hover);
+  border-radius: 2px; margin: 10px auto 0; flex-shrink: 0;
 }
-
 .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px 10px;
-  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 10px; flex-shrink: 0;
 }
-.modal-title {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-.modal-meta {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-dim);
-}
-
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 16px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
+.modal-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+.modal-meta  { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+.modal-body  { flex: 1; overflow-y: auto; padding: 0 16px 8px; display: flex; flex-direction: column; gap: 10px; }
 #edit-textarea {
-  width: 100%;
-  min-height: 180px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 14px;
-  line-height: 1.65;
-  padding: 12px;
-  outline: none;
-  resize: none;
+  width: 100%; min-height: 180px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-family: var(--sans);
+  font-size: 14px; line-height: 1.65; padding: 12px; outline: none; resize: none;
   transition: border-color 0.15s;
 }
 #edit-textarea:focus { border-color: var(--accent); }
 
+/* nodes extracted badge in modal */
+.modal-nodes { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 0 4px; }
+.modal-node-badge {
+  font-family: var(--mono); font-size: 9px; padding: 2px 7px; border-radius: 2px;
+  background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-border);
+}
+
 .modal-footer {
-  display: flex;
-  gap: 8px;
-  padding: 10px 16px calc(10px + var(--safe-bottom));
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
+  display: flex; gap: 8px; padding: 10px 16px calc(10px + var(--safe-bottom));
+  border-top: 1px solid var(--border); flex-shrink: 0;
 }
 .modal-footer .btn { flex: 1; justify-content: center; }
 
 /* ── Toast ── */
 #toast {
-  position: fixed;
-  bottom: calc(80px + var(--safe-bottom));
-  left: 50%;
-  transform: translateX(-50%) translateY(8px);
-  background: var(--surface2);
-  border: 1px solid var(--border-hover);
-  border-radius: var(--radius);
-  padding: 8px 16px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s, transform 0.2s;
-  white-space: nowrap;
-  z-index: 300;
+  position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%;
+  transform: translateX(-50%) translateY(8px); background: var(--surface2);
+  border: 1px solid var(--border-hover); border-radius: var(--radius); padding: 8px 16px;
+  font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0;
+  pointer-events: none; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; z-index: 300;
 }
-#toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 #toast.success { color: var(--accent); border-color: var(--accent-border); }
 #toast.error   { color: var(--danger); border-color: rgba(248,113,113,0.3); }
 </style>
 </head>
 <body>
 
-<!-- ── Loading ── -->
 <div id="loading">
-  <div class="loading-logo">
-    DA<span>Digital Assistant</span>
-  </div>
+  <div class="loading-logo">DA<span>Digital Assistant</span></div>
   <div class="spinner"></div>
 </div>
 
-<!-- ── Error ── -->
 <div id="error-screen">
   <div class="error-icon">⛔</div>
   <div class="error-title">Access Denied</div>
-  <div class="error-msg" id="error-msg">
-    Your Telegram account isn't linked yet. Open the bot and link your account first.
-  </div>
+  <div class="error-msg" id="error-msg">Open the bot and link your account first.</div>
 </div>
 
-<!-- ── App ── -->
 <div id="app">
-
   <div class="topbar">
-    <div class="topbar-brand">
-      DA<strong>Digital Assistant</strong>
-    </div>
+    <div class="topbar-brand">DA<strong>Digital Assistant</strong></div>
     <div class="topbar-user" id="topbar-user"></div>
   </div>
 
   <div class="tabbar">
     <button class="tab-btn active" data-tab="write">✏️ Write</button>
     <button class="tab-btn"        data-tab="ask"  >🔍 Ask</button>
-    <button class="tab-btn"        data-tab="history">📋 Notes</button>
+    <button class="tab-btn"        data-tab="history">📋 Entries</button>
   </div>
 
-  <!-- ══ WRITE TAB ══ -->
+  <!-- WRITE TAB -->
   <div class="tab-panel active" id="tab-write">
-    <div class="write-area">
-      <div class="write-meta">
-        <span class="write-date" id="write-date"></span>
-        <div class="write-tag-pills" id="write-tag-pills"></div>
-      </div>
-
-      <div class="note-editor-wrap">
-        <textarea
-          id="note-textarea"
-          placeholder="What's on your mind? Use @ for contacts, # for nodes…"
-          spellcheck="true"
-        ></textarea>
-
-        <!-- mention dropdown (shared for @ and #) -->
-        <div class="mention-dropdown" id="mention-dropdown"></div>
-      </div>
-
-      <div class="save-confirm" id="save-confirm">📝 Note saved — will classify tonight</div>
-
-      <div class="write-toolbar">
-        <span class="write-word-count" id="word-count">0 words</span>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost" id="clear-btn">Clear</button>
-          <button class="btn btn-primary" id="save-btn">Save note</button>
-        </div>
+    <div class="write-meta">
+      <span class="write-date" id="write-date"></span>
+    </div>
+    <div class="note-editor-wrap">
+      <textarea id="note-textarea"
+        placeholder="What's on your mind? Use @Name for people/contacts, #Node for projects & ideas…"
+        spellcheck="true"></textarea>
+      <div class="mention-dropdown" id="mention-dropdown"></div>
+    </div>
+    <div class="save-confirm" id="save-confirm">✓ Saved — Thea will extract nodes & edges tonight</div>
+    <div class="write-toolbar">
+      <span class="write-word-count" id="word-count">0 words</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" id="clear-btn">Clear</button>
+        <button class="btn btn-primary" id="save-btn">Save</button>
       </div>
     </div>
   </div>
 
-  <!-- ══ ASK TAB ══ -->
+  <!-- ASK TAB -->
   <div class="tab-panel" id="tab-ask">
-    <div class="ask-area">
-      <div class="ask-history" id="ask-history">
-        <div class="ask-empty" id="ask-empty">
-          <div class="ask-empty-icon">🧠</div>
-          <div>Ask anything about your notes</div>
-          <div class="ask-empty-hint">Searches across all your memory</div>
-        </div>
+    <div class="ask-history" id="ask-history">
+      <div class="ask-empty" id="ask-empty">
+        <div class="ask-empty-icon">🧠</div>
+        <div>Ask anything about your notes</div>
+        <div class="ask-empty-hint">Searches across all your memory</div>
       </div>
-      <div class="ask-input-bar">
-        <textarea
-          id="ask-input"
-          placeholder="Ask your brain…"
-          rows="1"
-        ></textarea>
-        <button class="ask-send-btn" id="ask-send-btn" disabled>
-          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        </button>
-      </div>
+    </div>
+    <div class="ask-input-bar">
+      <textarea id="ask-input" placeholder="Ask your brain…" rows="1"></textarea>
+      <button class="ask-send-btn" id="ask-send-btn" disabled>
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
     </div>
   </div>
 
-  <!-- ══ HISTORY TAB ══ -->
+  <!-- HISTORY TAB -->
   <div class="tab-panel" id="tab-history">
-    <div class="history-area">
-      <div class="history-filters" id="history-filters">
-        <button class="filter-chip active" data-type="all">All</button>
-        <button class="filter-chip" data-type="journal">Journal</button>
-        <button class="filter-chip" data-type="idea">Idea</button>
-        <button class="filter-chip" data-type="meeting">Meeting</button>
-        <button class="filter-chip" data-type="event">Event</button>
-        <button class="filter-chip" data-type="reference">Reference</button>
-        <button class="filter-chip" data-type="free">Unclassified</button>
-      </div>
-      <div class="history-list" id="history-list">
-        <div class="history-empty">
-          <div style="font-size:24px">📭</div>
-          <div>Loading notes…</div>
-        </div>
-      </div>
+    <div class="history-filters" id="history-filters">
+      <button class="filter-chip active" data-filter="all">All</button>
+      <button class="filter-chip" data-filter="done">Processed</button>
+      <button class="filter-chip" data-filter="pending">Pending</button>
+      <button class="filter-chip" data-filter="miniapp">From app</button>
+    </div>
+    <div class="history-list" id="history-list">
+      <div class="history-empty"><div style="font-size:24px">⏳</div><div>Loading…</div></div>
     </div>
   </div>
+</div>
 
-</div><!-- /#app -->
-
-<!-- ══ Edit Modal ══ -->
+<!-- EDIT MODAL -->
 <div class="modal-overlay" id="edit-modal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <span class="modal-title">Edit note</span>
+      <span class="modal-title">Edit entry</span>
       <span class="modal-meta" id="edit-modal-date"></span>
     </div>
     <div class="modal-body">
-      <textarea id="edit-textarea" spellcheck="true" placeholder="Edit your note… Use @ for contacts, # for nodes"></textarea>
+      <div class="modal-nodes" id="edit-modal-nodes"></div>
+      <textarea id="edit-textarea" spellcheck="true"
+        placeholder="Edit your entry… Use @Name for contacts, #Node for projects"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger"  id="edit-delete-btn">Delete</button>
@@ -907,47 +449,43 @@ body {
 
 <script>
 // ══════════════════════════════════════════════════════════
-// Config
+// CONFIG — aligned to real DB schema
 // ══════════════════════════════════════════════════════════
-const SUPABASE_URL = "https://zixysyctnynphstyvvgx.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppeHlzeWN0bnlucGhzdHl2dngiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NDk0OTQ0MCwiZXhwIjoyMDkwNTI1NDQwfQ.Ilu-T02HJfT0GnMzalvfxdQHLXBRkHxDJkqriFUEPJo";
-const AUTH_EDGE   = `${SUPABASE_URL}/functions/v1/miniapp-auth`;
-const SEARCH_EDGE = `${SUPABASE_URL}/functions/v1/miniapp-search`;
-const QUERY_EDGE  = `${SUPABASE_URL}/functions/v1/query-memory`;
+const SUPABASE_URL    = "https://zixysyctnynphstyvvgx.supabase.co";
+const SUPABASE_ANON   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppeHlzeWN0bnlucGhzdHl2dngiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NDk0OTQ0MCwiZXhwIjoyMDkwNTI1NDQwfQ.Ilu-T02HJfT0GnMzalvfxdQHLXBRkHxDJkqriFUEPJo";
+const AUTH_EDGE       = `${SUPABASE_URL}/functions/v1/miniapp-auth`;
+const SEARCH_EDGE     = `${SUPABASE_URL}/functions/v1/miniapp-search`;
+const QUERY_EDGE      = `${SUPABASE_URL}/functions/v1/query-memory`;
 
 // ══════════════════════════════════════════════════════════
-// State
+// STATE
 // ══════════════════════════════════════════════════════════
 let accessToken    = null;
-let tokenExpiresAt = 0;       // unix seconds — for refresh guard
+let tokenExpiresAt = 0;
 let userId         = null;
 let displayName    = null;
 let timezone       = "Africa/Kampala";
 let currentFilter  = "all";
-let notesOffset    = 0;
+let historyOffset  = 0;
 const PAGE_SIZE    = 20;
-let allNotesLoaded = false;
-let editingNoteId  = null;
+let allLoaded      = false;
+let editingEntryId = null;
 
-// Token-ready gate
 let _tokenResolve;
-const tokenReady = new Promise(res => { _tokenResolve = res; });
+const tokenReady = new Promise(r => { _tokenResolve = r; });
 
 // ══════════════════════════════════════════════════════════
-// Helpers
+// HELPERS
 // ══════════════════════════════════════════════════════════
-
-// Re-auth silently if token expires within 5 minutes
 async function maybeRefreshToken() {
   const nowSec = Math.floor(Date.now() / 1000);
   if (tokenExpiresAt && nowSec > tokenExpiresAt - 300) {
     try {
       const tg = window.Telegram?.WebApp;
       const initData = tg?.initData || "";
-      if (!initData) return; // can't refresh without initData
-      const res  = await fetch(AUTH_EDGE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      if (!initData) return;
+      const res = await fetch(AUTH_EDGE, {
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ initData }),
       });
       if (res.ok) {
@@ -957,7 +495,7 @@ async function maybeRefreshToken() {
           tokenExpiresAt = data.expires_at ?? (nowSec + 3600);
         }
       }
-    } catch (_) { /* silent — we'll fail on the actual request */ }
+    } catch (_) {}
   }
 }
 
@@ -968,7 +506,7 @@ async function supaFetch(path, opts = {}) {
     ...opts,
     headers: {
       "Content-Type": "application/json",
-      "apikey": SUPABASE_ANON_KEY,
+      "apikey":        SUPABASE_ANON,
       "Authorization": `Bearer ${accessToken}`,
       ...(opts.headers || {}),
     },
@@ -986,13 +524,12 @@ function toast(msg, type = "success") {
 
 function fmtDate(iso) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-GB", {
-    weekday: "short", day: "numeric", month: "short"
-  });
+  return new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
-function todayInTz(tz) {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date());
+function fmtDateTime(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 function wordCount(text) {
@@ -1000,39 +537,31 @@ function wordCount(text) {
   return t === "" ? 0 : t.split(/\s+/).length;
 }
 
+function escapeHtml(s) {
+  return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
+
 // ══════════════════════════════════════════════════════════
-// Boot — Telegram initData auth
+// BOOT
 // ══════════════════════════════════════════════════════════
 async function boot() {
   const tg = window.Telegram?.WebApp;
-
-  // Expand to full height
-  if (tg) {
-    tg.expand();
-    tg.ready();
-    tg.enableClosingConfirmation?.();
-  }
+  if (tg) { tg.expand(); tg.ready(); tg.enableClosingConfirmation?.(); }
 
   const initData = tg?.initData || "";
-
   if (!initData) {
-    // Dev fallback: show error with explanation
     showError("Open this app through Telegram. Direct browser access is not supported.");
     return;
   }
 
   try {
-    const res = await fetch(AUTH_EDGE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res  = await fetch(AUTH_EDGE, {
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ initData }),
     });
     const data = await res.json();
-
-    if (!res.ok) {
-      showError(data.error || "Authentication failed.");
-      return;
-    }
+    if (!res.ok) { showError(data.error || "Authentication failed."); return; }
 
     accessToken    = data.access_token;
     tokenExpiresAt = data.expires_at ?? (Math.floor(Date.now() / 1000) + 3600);
@@ -1040,31 +569,24 @@ async function boot() {
     displayName    = data.display_name;
     timezone       = data.timezone || "Africa/Kampala";
 
-    // Resolve the gate — all supaFetch calls waiting on this can now proceed
     _tokenResolve();
 
-    document.getElementById("topbar-user").textContent = displayName || "";
-    document.getElementById("write-date").textContent  = fmtDate(new Date().toISOString());
+    document.getElementById("topbar-user").textContent  = displayName || "";
+    document.getElementById("write-date").textContent   = fmtDate(new Date().toISOString());
+    document.getElementById("loading").style.display    = "none";
+    document.getElementById("app").style.display        = "flex";
 
-    document.getElementById("loading").style.display = "none";
-    document.getElementById("app").style.display = "flex";
-
-    // Don't preload notes — load on demand when History tab is opened
-
-  } catch (err) {
-    showError("Network error: " + err.message);
-  }
+  } catch (err) { showError("Network error: " + err.message); }
 }
 
 function showError(msg) {
-  document.getElementById("loading").style.display = "none";
-  const el = document.getElementById("error-screen");
-  el.style.display = "flex";
-  document.getElementById("error-msg").textContent = msg;
+  document.getElementById("loading").style.display    = "none";
+  document.getElementById("error-screen").style.display = "flex";
+  document.getElementById("error-msg").textContent    = msg;
 }
 
 // ══════════════════════════════════════════════════════════
-// Tabs
+// TABS
 // ══════════════════════════════════════════════════════════
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -1073,18 +595,14 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
     btn.classList.add("active");
     document.getElementById(`tab-${tab}`).classList.add("active");
-    if (tab === "history") {
-      notesOffset = 0;
-      allNotesLoaded = false;
-      loadNotes(true);
-    }
+    if (tab === "history") { historyOffset = 0; allLoaded = false; loadHistory(true); }
   });
 });
 
 // ══════════════════════════════════════════════════════════
-// WRITE TAB
+// WRITE TAB — saves to "entries" table (raw_text, source_type)
 // ══════════════════════════════════════════════════════════
-const noteTA = document.getElementById("note-textarea");
+const noteTA      = document.getElementById("note-textarea");
 const wordCountEl = document.getElementById("word-count");
 const saveConfirm = document.getElementById("save-confirm");
 
@@ -1093,445 +611,289 @@ noteTA.addEventListener("input", () => {
   wordCountEl.textContent = `${wc} word${wc === 1 ? "" : "s"}`;
   saveConfirm.style.display = "none";
 });
-
-// Attach unified mention engine (@contacts, #nodes) to write textarea
 attachMentionEngine(noteTA);
 
 document.getElementById("clear-btn").addEventListener("click", () => {
-  if (noteTA.value.trim() === "") return;
+  if (!noteTA.value.trim()) return;
   if (!confirm("Clear this note?")) return;
   noteTA.value = "";
   wordCountEl.textContent = "0 words";
   saveConfirm.style.display = "none";
-  // Clear token map too
   getMState(noteTA).tokenMap = [];
   closeMentionDropdown(noteTA);
 });
 
-document.getElementById("save-btn").addEventListener("click", saveNote);
+document.getElementById("save-btn").addEventListener("click", saveEntry);
 
-async function saveNote() {
-  const rawContent = noteTA.value.trim();
-  if (!rawContent) { toast("Nothing to save", "error"); return; }
+async function saveEntry() {
+  const rawText = noteTA.value.trim();
+  if (!rawText) { toast("Nothing to save", "error"); return; }
 
-  // Serialise any @mentions and #nodes to structured tokens
-  const ms = getMState(noteTA);
-  const content = serialiseMentions(rawContent, ms.tokenMap);
+  // Enrich the raw text with any @mention / #node names we resolved
+  // The ingest pipeline will see these names and link them to existing nodes
+  const ms      = getMState(noteTA);
+  const content = serialiseMentions(rawText, ms.tokenMap);
 
   const btn = document.getElementById("save-btn");
-  btn.disabled = true;
-  btn.textContent = "Saving…";
+  btn.disabled = true; btn.textContent = "Saving…";
 
   try {
-    const noteDate = todayInTz(timezone);
-
-    const res = await supaFetch("/rest/v1/notes", {
+    // Insert into "entries" — the same table the bot writes to
+    const res = await supaFetch("/rest/v1/entries", {
       method: "POST",
       headers: { "Prefer": "return=representation", "Accept": "application/json" },
       body: JSON.stringify({
-        user_id: userId,
-        content,
-        content_type: "free",
-        note_date: noteDate,
+        user_id:     userId,
+        raw_text:    content,
+        source_type: "miniapp",   // distinguishable from "telegram"
       }),
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      let errMsg = "Failed to save note";
+      let errMsg = "Failed to save";
       try { errMsg = JSON.parse(errText).message || errMsg; } catch {}
       throw new Error(errMsg);
     }
 
-    const saved = await res.json();
-    const noteId = Array.isArray(saved) ? saved[0]?.id : saved?.id;
-    if (!noteId) throw new Error("Note saved but no ID returned");
+    const saved   = await res.json();
+    const entryId = Array.isArray(saved) ? saved[0]?.id : saved?.id;
+    if (!entryId) throw new Error("Saved but no ID returned");
 
+    // Queue embed job — same as ingest-entry does in step 9
     await supaFetch("/rest/v1/processing_queue", {
       method: "POST",
       headers: { "Prefer": "return=minimal" },
-      body: JSON.stringify([
-        { note_id: noteId, user_id: userId, job_type: "embed",   status: "pending" },
-        { note_id: noteId, user_id: userId, job_type: "extract", status: "pending" },
-      ]),
+      body: JSON.stringify({
+        entry_id: entryId,   // ← correct column name
+        user_id:  userId,
+        job_type: "embed",   // ← valid enum value
+        status:   "ready",   // ← ready for processor to pick up
+      }),
     });
 
-    // Clear editor and token map
+    // Clear
     noteTA.value = "";
-    ms.tokenMap = [];
+    ms.tokenMap  = [];
     wordCountEl.textContent = "0 words";
     saveConfirm.style.display = "block";
-    setTimeout(() => { saveConfirm.style.display = "none"; }, 3500);
-    toast("Note saved ✓");
+    setTimeout(() => { saveConfirm.style.display = "none"; }, 4000);
+    toast("Entry saved ✓");
 
   } catch (err) {
     toast(err.message, "error");
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Save note";
+    btn.disabled = false; btn.textContent = "Save";
   }
 }
 
 // ══════════════════════════════════════════════════════════
-// UNIFIED MENTION ENGINE  (@contacts  #nodes)
+// MENTION ENGINE (@contacts  #nodes)
 // ══════════════════════════════════════════════════════════
-//
-// Token map: stores resolved mentions so we can serialise
-// the display text + uuid at save time.
-// Structure: Array<{ trigger, start, end, display, id, type }>
-// (start/end track positions in the *raw* textarea value)
-//
-// On save, we walk the raw text and replace each tracked
-// mention with the structured token.
-// ──────────────────────────────────────────────────────────
-
 const TRIGGERS = { "@": "contacts", "#": "nodes" };
-
-// Per-editor state (keyed by textarea element)
 const mentionState = new WeakMap();
 
 function getMState(ta) {
   if (!mentionState.has(ta)) {
     mentionState.set(ta, {
-      active:       false,
-      trigger:      "",       // "@" or "#"
-      triggerStart: -1,       // index in ta.value
-      query:        "",
-      focusIdx:     -1,
-      debounce:     null,
-      tokenMap:     [],       // resolved mentions for this editor
+      active: false, trigger: "", triggerStart: -1,
+      query: "", focusIdx: -1, debounce: null, tokenMap: [],
     });
   }
   return mentionState.get(ta);
 }
 
-// Single shared dropdown element
 const mentionDD = document.getElementById("mention-dropdown");
-let mentionTargetTA = null;  // which textarea owns the dropdown right now
+let mentionTargetTA = null;
 
-// ── Attach to a textarea ─────────────────────────────────
 function attachMentionEngine(ta) {
   ta.addEventListener("input",   () => onMentionInput(ta));
   ta.addEventListener("keydown", (e) => onMentionKeydown(ta, e));
-  ta.addEventListener("blur",    (e) => {
-    // small delay so click on dropdown item fires first
-    setTimeout(() => {
-      if (mentionTargetTA === ta) closeMentionDropdown(ta);
-    }, 150);
-  });
+  ta.addEventListener("blur",    () => setTimeout(() => { if (mentionTargetTA === ta) closeMentionDropdown(ta); }, 150));
 }
 
-// ── Input handler ─────────────────────────────────────────
 function onMentionInput(ta) {
   const ms  = getMState(ta);
   const pos = ta.selectionStart;
   const before = ta.value.substring(0, pos);
-
-  // Find the last trigger character that hasn't been closed by whitespace
-  let foundTrigger = "";
-  let foundIdx = -1;
+  let foundTrigger = "", foundIdx = -1;
 
   for (const ch of Object.keys(TRIGGERS)) {
     const idx = before.lastIndexOf(ch);
     if (idx === -1) continue;
-    const fragment = before.substring(idx + 1);
-    // Valid if no whitespace between trigger and cursor
-    if (!/\s/.test(fragment)) {
-      if (idx > foundIdx) { foundIdx = idx; foundTrigger = ch; }
-    }
+    const frag = before.substring(idx + 1);
+    if (!/\s/.test(frag) && idx > foundIdx) { foundIdx = idx; foundTrigger = ch; }
   }
 
-  if (foundIdx === -1) {
-    closeMentionDropdown(ta);
-    return;
-  }
+  if (foundIdx === -1) { closeMentionDropdown(ta); return; }
 
-  const query = before.substring(foundIdx + 1);
-
-  ms.active       = true;
-  ms.trigger      = foundTrigger;
-  ms.triggerStart = foundIdx;
-  ms.query        = query;
-  ms.focusIdx     = -1;
+  ms.active = true; ms.trigger = foundTrigger; ms.triggerStart = foundIdx;
+  ms.query  = before.substring(foundIdx + 1); ms.focusIdx = -1;
   mentionTargetTA = ta;
 
   clearTimeout(ms.debounce);
   showMentionState(ta, "loading");
-  ms.debounce = setTimeout(() => runMentionSearch(ta), query.length === 0 ? 0 : 200);
+  ms.debounce = setTimeout(() => runMentionSearch(ta), ms.query.length === 0 ? 0 : 200);
 }
 
-// ── Keyboard handler ──────────────────────────────────────
 function onMentionKeydown(ta, e) {
   const ms = getMState(ta);
   if (!ms.active || !mentionDD.classList.contains("open")) return;
-
   const items = mentionDD.querySelectorAll(".mention-item");
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-    ms.focusIdx = Math.min(ms.focusIdx + 1, items.length - 1);
-    renderMentionFocus(items, ms);
-  } else if (e.key === "ArrowUp") {
-    e.preventDefault();
-    ms.focusIdx = Math.max(ms.focusIdx - 1, 0);
-    renderMentionFocus(items, ms);
-  } else if (e.key === "Enter" || e.key === "Tab") {
+  if (e.key === "ArrowDown") { e.preventDefault(); ms.focusIdx = Math.min(ms.focusIdx + 1, items.length - 1); renderFocus(items, ms); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); ms.focusIdx = Math.max(ms.focusIdx - 1, 0); renderFocus(items, ms); }
+  else if (e.key === "Enter" || e.key === "Tab") {
     const focused = mentionDD.querySelector(".mention-item.focused");
     if (focused) { e.preventDefault(); focused.click(); }
-  } else if (e.key === "Escape") {
-    e.preventDefault();
-    closeMentionDropdown(ta);
-  }
+  } else if (e.key === "Escape") { e.preventDefault(); closeMentionDropdown(ta); }
 }
 
-function renderMentionFocus(items, ms) {
-  items.forEach((item, i) => {
-    item.classList.toggle("focused", i === ms.focusIdx);
-  });
+function renderFocus(items, ms) {
+  items.forEach((item, i) => item.classList.toggle("focused", i === ms.focusIdx));
 }
 
-// ── Loading / empty / error states ───────────────────────
 function showMentionState(ta, state, message = "") {
   const ms = getMState(ta);
   const label = ms.trigger === "@" ? "Contacts" : "Nodes";
-  const headerClass = ms.trigger === "@" ? "mention-header-at" : "mention-header-hash";
-
+  const hClass = ms.trigger === "@" ? "mention-header-at" : "mention-header-hash";
   let inner = "";
-  if (state === "loading") {
-    inner = `<div class="mention-loading">Searching ${label.toLowerCase()}…</div>`;
-  } else if (state === "empty") {
-    inner = `<div class="mention-empty">No ${label.toLowerCase()} found</div>`;
-  } else if (state === "error") {
-    inner = `<div class="mention-error">⚠ ${message || "Search failed"}</div>`;
-  }
+  if (state === "loading") inner = `<div class="mention-loading">Searching ${label.toLowerCase()}…</div>`;
+  else if (state === "empty") inner = `<div class="mention-empty">No ${label.toLowerCase()} found</div>`;
+  else if (state === "error") inner = `<div class="mention-error">⚠ ${message || "Search failed"}</div>`;
 
-  mentionDD.innerHTML = `
-    <div class="mention-header">
-      <span class="mention-header-label ${headerClass}">${ms.trigger} ${label}</span>
-    </div>
-    ${inner}
-  `;
+  mentionDD.innerHTML = `<div class="mention-header"><span class="mention-header-label ${hClass}">${ms.trigger} ${label}</span></div>${inner}`;
   positionMentionDropdown(ta);
   mentionDD.classList.add("open");
 }
 
-// ── Run search via edge function ──────────────────────────
 async function runMentionSearch(ta) {
   const ms = getMState(ta);
   if (!ms.active) return;
-
-  await tokenReady;
-  await maybeRefreshToken();
-
+  await tokenReady; await maybeRefreshToken();
   try {
     const res = await fetch(SEARCH_EDGE, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        type:  TRIGGERS[ms.trigger],
-        query: ms.query,
-        limit: 8,
-      }),
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
+      body: JSON.stringify({ type: TRIGGERS[ms.trigger], query: ms.query, limit: 8 }),
     });
-
-    if (!ms.active) return; // user may have closed while awaiting
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-      showMentionState(ta, "error", err.error);
-      return;
-    }
-
-    const results = await res.json();
-    renderMentionResults(ta, results);
-
-  } catch (err) {
-    if (ms.active) showMentionState(ta, "error", err.message);
-  }
+    if (!ms.active) return;
+    if (!res.ok) { const err = await res.json().catch(() => ({})); showMentionState(ta, "error", err.error); return; }
+    renderMentionResults(ta, await res.json());
+  } catch (err) { if (ms.active) showMentionState(ta, "error", err.message); }
 }
 
-// ── Render results ────────────────────────────────────────
 function renderMentionResults(ta, results) {
   const ms = getMState(ta);
   const label = ms.trigger === "@" ? "Contacts" : "Nodes";
-  const headerClass = ms.trigger === "@" ? "mention-header-at" : "mention-header-hash";
-
-  if (!results || results.length === 0) {
-    showMentionState(ta, "empty");
-    return;
-  }
-
+  const hClass = ms.trigger === "@" ? "mention-header-at" : "mention-header-hash";
+  if (!results || results.length === 0) { showMentionState(ta, "empty"); return; }
   ms.focusIdx = -1;
 
-  const itemsHtml = results.map((r, i) => `
-    <div class="mention-item" data-idx="${i}" data-id="${escapeHtml(r.id)}" data-name="${escapeHtml(r.name)}">
-      <div class="mention-name">${escapeHtml(r.name)}</div>
-      ${r.sub ? `<div class="mention-sub">${escapeHtml(r.sub)}</div>` : ""}
-    </div>
-  `).join("");
-
   mentionDD.innerHTML = `
-    <div class="mention-header">
-      <span class="mention-header-label ${headerClass}">${ms.trigger} ${label}</span>
-    </div>
-    ${itemsHtml}
+    <div class="mention-header"><span class="mention-header-label ${hClass}">${ms.trigger} ${label}</span></div>
+    ${results.map((r, i) => `
+      <div class="mention-item" data-idx="${i}" data-id="${escapeHtml(r.id)}" data-name="${escapeHtml(r.name)}">
+        <div class="mention-name">${escapeHtml(r.name)}</div>
+        ${r.sub ? `<div class="mention-sub">${escapeHtml(r.sub)}</div>` : ""}
+      </div>
+    `).join("")}
   `;
 
   mentionDD.querySelectorAll(".mention-item").forEach(item => {
-    item.addEventListener("mousedown", (e) => {
-      e.preventDefault(); // prevent textarea blur
-      insertMention(ta, item.dataset.id, item.dataset.name);
-    });
+    item.addEventListener("mousedown", (e) => { e.preventDefault(); insertMention(ta, item.dataset.id, item.dataset.name); });
   });
 
   positionMentionDropdown(ta);
   mentionDD.classList.add("open");
 }
 
-// ── Insert mention into textarea ──────────────────────────
-// In the textarea the user sees: @John Doe  or  #Project X
-// The tokenMap records the uuid so we can serialise on save.
-function insertMention(ta, id, displayName) {
+function insertMention(ta, id, name) {
   const ms = getMState(ta);
-  const trigger  = ms.trigger;
   const before   = ta.value.substring(0, ms.triggerStart);
   const after    = ta.value.substring(ta.selectionStart);
-  const inserted = `${trigger}${displayName}`;
+  const inserted = `${ms.trigger}${name}`;
 
-  ta.value = before + inserted + "\u00A0" + after; // non-breaking space as separator
+  ta.value = before + inserted + "\u00A0" + after;
   const newPos = before.length + inserted.length + 1;
   ta.setSelectionRange(newPos, newPos);
   ta.focus();
 
-  // Record in token map
-  ms.tokenMap.push({
-    trigger,
-    displayText: displayName,
-    id,
-    type: TRIGGERS[trigger],
-    // We'll re-detect positions at save time via display text matching
-  });
-
+  ms.tokenMap.push({ trigger: ms.trigger, displayText: name, id, type: TRIGGERS[ms.trigger] });
   closeMentionDropdown(ta);
 
-  // Update word count if this is the main editor
   if (ta === noteTA) {
-    wordCountEl.textContent = `${wordCount(ta.value)} word${wordCount(ta.value) === 1 ? "" : "s"}`;
+    const wc = wordCount(ta.value);
+    wordCountEl.textContent = `${wc} word${wc === 1 ? "" : "s"}`;
   }
 }
 
-// ── Close dropdown ────────────────────────────────────────
 function closeMentionDropdown(ta) {
   if (ta) {
     const ms = getMState(ta);
-    ms.active       = false;
-    ms.trigger      = "";
-    ms.triggerStart = -1;
-    ms.query        = "";
-    ms.focusIdx     = -1;
+    ms.active = false; ms.trigger = ""; ms.triggerStart = -1;
+    ms.query = ""; ms.focusIdx = -1;
     clearTimeout(ms.debounce);
   }
   mentionDD.classList.remove("open");
   mentionTargetTA = null;
 }
 
-// ── Position dropdown using viewport geometry ─────────────
 function positionMentionDropdown(ta) {
-  const vp        = window.visualViewport;
-  const vpHeight  = vp ? vp.height  : window.innerHeight;
-  const vpOffsetY = vp ? vp.offsetTop : 0;
-  const vpOffsetX = vp ? vp.offsetLeft : 0;
-
-  const taRect    = ta.getBoundingClientRect();
-  const ddWidth   = Math.min(Math.max(taRect.width - 16, 220), 340);
-  const ddMaxH    = 200;
-
-  // Prefer upward (above keyboard on mobile)
-  const spaceAbove = taRect.top - vpOffsetY;
-  const spaceBelow = vpHeight - (taRect.bottom - vpOffsetY);
-
+  const vp = window.visualViewport;
+  const vpH = vp ? vp.height : window.innerHeight;
+  const vpY = vp ? vp.offsetTop : 0;
+  const vpX = vp ? vp.offsetLeft : 0;
+  const taRect  = ta.getBoundingClientRect();
+  const ddWidth = Math.min(Math.max(taRect.width - 16, 220), 340);
+  const ddMaxH  = 200;
+  const spaceAbove = taRect.top - vpY;
+  const spaceBelow = vpH - (taRect.bottom - vpY);
   let top, left;
-  left = Math.max(8, taRect.left + vpOffsetX + 8);
-
+  left = Math.max(8, taRect.left + vpX + 8);
   if (spaceAbove > ddMaxH || spaceAbove > spaceBelow) {
-    // pop up — anchor to bottom of dropdown at top of textarea
-    top = taRect.top + vpOffsetY - ddMaxH - 4;
-    top = Math.max(vpOffsetY + 4, top);
+    top = Math.max(vpY + 4, taRect.top + vpY - ddMaxH - 4);
   } else {
-    // pop down
-    top = taRect.bottom + vpOffsetY + 4;
+    top = taRect.bottom + vpY + 4;
   }
-
-  mentionDD.style.position = "fixed";
-  mentionDD.style.left     = `${left}px`;
-  mentionDD.style.top      = `${top}px`;
-  mentionDD.style.width    = `${ddWidth}px`;
-  mentionDD.style.maxHeight = `${ddMaxH}px`;
+  mentionDD.style.cssText = `position:fixed;left:${left}px;top:${top}px;width:${ddWidth}px;max-height:${ddMaxH}px;`;
 }
 
-// ── Serialise mentions at save time ──────────────────────
-// Replaces @Display Name with @[Display Name](contact:uuid)
-// and #Node Name with #[Node Name](node:uuid)
+// Serialise @Name → @[Name](contact:id) and #Node → #[Node](node:id)
+// The ingest pipeline can parse these to pre-link nodes without guessing
 function serialiseMentions(rawText, tokenMap) {
   if (!tokenMap || tokenMap.length === 0) return rawText;
-
   let result = rawText;
-
-  // Sort by longest name first to avoid partial replacements
   const sorted = [...tokenMap].sort((a, b) => b.displayText.length - a.displayText.length);
-
-  for (const token of sorted) {
-    const plain = `${token.trigger}${token.displayText}`;
-    const structured = `${token.trigger}[${token.displayText}](${token.type === "contacts" ? "contact" : "node"}:${token.id})`;
-    // Replace only the first occurrence that hasn't already been replaced
+  for (const t of sorted) {
+    const plain      = `${t.trigger}${t.displayText}`;
+    const structured = `${t.trigger}[${t.displayText}](${t.type === "contacts" ? "contact" : "node"}:${t.id})`;
     const re = new RegExp(escapeRegex(plain) + "(?!\\])", "");
     result = result.replace(re, structured);
   }
-
   return result;
-}
-
-function escapeRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function escapeHtml(s) {
-  return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
 // ══════════════════════════════════════════════════════════
 // ASK TAB
 // ══════════════════════════════════════════════════════════
-const askInput  = document.getElementById("ask-input");
+const askInput   = document.getElementById("ask-input");
 const askSendBtn = document.getElementById("ask-send-btn");
 const askHistory = document.getElementById("ask-history");
 
 askInput.addEventListener("input", () => {
-  askSendBtn.disabled = askInput.value.trim() === "";
-  // Auto-resize
+  askSendBtn.disabled = !askInput.value.trim();
   askInput.style.height = "auto";
   askInput.style.height = Math.min(askInput.scrollHeight, 120) + "px";
 });
-
 askInput.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    if (!askSendBtn.disabled) sendQuery();
-  }
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!askSendBtn.disabled) sendQuery(); }
 });
-
 askSendBtn.addEventListener("click", sendQuery);
 
 async function sendQuery() {
-  const q = askInput.value.trim();
-  if (!q) return;
-
-  // Hide empty state
+  const q = askInput.value.trim(); if (!q) return;
   document.getElementById("ask-empty")?.remove();
 
-  // Add question bubble
   const qBlock = document.createElement("div");
   qBlock.className = "qa-block";
   qBlock.innerHTML = `
@@ -1541,20 +903,14 @@ async function sendQuery() {
   askHistory.appendChild(qBlock);
   askHistory.scrollTop = askHistory.scrollHeight;
 
-  askInput.value = "";
-  askInput.style.height = "auto";
-  askSendBtn.disabled = true;
+  askInput.value = ""; askInput.style.height = "auto"; askSendBtn.disabled = true;
 
   try {
-    const res = await fetch(QUERY_EDGE, {
+    const res  = await fetch(QUERY_EDGE, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-      },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
       body: JSON.stringify({ query: q, top_k: 8, hop_depth: 1 }),
     });
-
     const data = await res.json();
     const thinkEl = document.getElementById("thinking-bubble");
 
@@ -1565,19 +921,15 @@ async function sendQuery() {
 
     const sourcesHtml = data.sources?.length
       ? `<div class="answer-sources">
-          ${data.note_count ? `<span class="source-chip">📄 ${data.note_count} note${data.note_count > 1 ? "s" : ""}</span>` : ""}
-          ${data.contact_count ? `<span class="source-chip">👤 ${data.contact_count} contact${data.contact_count > 1 ? "s" : ""}</span>` : ""}
-          ${data.sources.slice(0, 4).map(s =>
-            `<span class="source-chip">${fmtDate(s.date)}</span>`
-          ).join("")}
+          ${data.note_count    ? `<span class="source-chip">📄 ${data.note_count} entry</span>` : ""}
+          ${data.contact_count ? `<span class="source-chip">👤 ${data.contact_count} contact</span>` : ""}
+          ${(data.sources || []).slice(0, 4).map(s => `<span class="source-chip">${fmtDate(s.date)}</span>`).join("")}
         </div>` : "";
 
     if (thinkEl) {
-      thinkEl.className = "bubble-a";
-      thinkEl.removeAttribute("id");
+      thinkEl.className = "bubble-a"; thinkEl.removeAttribute("id");
       thinkEl.innerHTML = `<div class="answer-text">${escapeHtml(data.answer || "")}</div>${sourcesHtml}`;
     }
-
     askHistory.scrollTop = askHistory.scrollHeight;
 
   } catch (err) {
@@ -1587,107 +939,111 @@ async function sendQuery() {
 }
 
 // ══════════════════════════════════════════════════════════
-// HISTORY TAB
+// HISTORY TAB — reads from "entries" table
 // ══════════════════════════════════════════════════════════
 document.querySelectorAll(".filter-chip").forEach(chip => {
   chip.addEventListener("click", () => {
     document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
     chip.classList.add("active");
-    currentFilter = chip.dataset.type;
-    notesOffset = 0;
-    allNotesLoaded = false;
-    loadNotes(true);
+    currentFilter = chip.dataset.filter;
+    historyOffset = 0; allLoaded = false;
+    loadHistory(true);
   });
 });
 
-async function loadNotes(reset = false) {
+async function loadHistory(reset = false) {
   const list = document.getElementById("history-list");
   if (reset) {
     list.innerHTML = `<div class="history-empty"><div style="font-size:20px">⏳</div><div>Loading…</div></div>`;
-    notesOffset = 0;
-    allNotesLoaded = false;
+    historyOffset = 0; allLoaded = false;
   }
-  if (allNotesLoaded) return;
+  if (allLoaded) return;
 
   try {
-    let url = `/rest/v1/notes?user_id=eq.${userId}&order=note_date.desc,created_at.desc&limit=${PAGE_SIZE}&offset=${notesOffset}`;
-    if (currentFilter !== "all") url += `&content_type=eq.${currentFilter}`;
-    // Select only what we need
-    url += "&select=id,content,content_type,note_date,tags,created_at,processed_at";
+    // Build filter
+    let url = `/rest/v1/entries?user_id=eq.${userId}&order=created_at.desc&limit=${PAGE_SIZE}&offset=${historyOffset}`;
+    url += `&select=id,raw_text,source_type,created_at,ingested_at,nodes_extracted,validation_ok`;
+
+    if (currentFilter === "done")    url += `&ingested_at=not.is.null&validation_ok=eq.true`;
+    if (currentFilter === "pending") url += `&ingested_at=is.null`;
+    if (currentFilter === "miniapp") url += `&source_type=eq.miniapp`;
 
     const res = await supaFetch(url);
     if (!res.ok) throw new Error(await res.text());
+    const entries = await res.json();
 
-    const notes = await res.json();
     if (reset) list.innerHTML = "";
-
-    // Remove load-more if present
     list.querySelector(".load-more-row")?.remove();
 
-    if (notes.length === 0 && reset) {
-      list.innerHTML = `<div class="history-empty"><div style="font-size:24px">📭</div><div>No notes yet</div></div>`;
+    if (entries.length === 0 && reset) {
+      list.innerHTML = `<div class="history-empty"><div style="font-size:24px">📭</div><div>No entries</div></div>`;
       return;
     }
 
-    notes.forEach(note => list.appendChild(buildNoteCard(note)));
-    notesOffset += notes.length;
+    entries.forEach(e => list.appendChild(buildEntryCard(e)));
+    historyOffset += entries.length;
 
-    if (notes.length === PAGE_SIZE) {
+    if (entries.length === PAGE_SIZE) {
       const row = document.createElement("div");
       row.className = "load-more-row";
       row.innerHTML = `<button class="btn btn-ghost" id="load-more-btn">Load more</button>`;
       list.appendChild(row);
-      document.getElementById("load-more-btn").addEventListener("click", () => loadNotes(false));
+      document.getElementById("load-more-btn").addEventListener("click", () => loadHistory(false));
     } else {
-      allNotesLoaded = true;
+      allLoaded = true;
     }
-
   } catch (err) {
     if (reset) list.innerHTML = `<div class="history-empty"><div>Error: ${escapeHtml(err.message)}</div></div>`;
     toast(err.message, "error");
   }
 }
 
-function buildNoteCard(note) {
+function buildEntryCard(entry) {
   const card = document.createElement("div");
-  card.className = "note-card";
-  card.dataset.id = note.id;
+  card.className = "entry-card";
+  card.dataset.id = entry.id;
 
-  const typeClass = `type-${note.content_type || "free"}`;
-  const typeLabel = note.content_type || "free";
-  const isUnprocessed = !note.processed_at;
-  const tagsHtml = (note.tags || []).slice(0, 5).map(t =>
-    `<span class="note-tag">${escapeHtml(t)}</span>`
-  ).join("");
+  // Status badge
+  let statusClass = "status-pending";
+  let statusLabel = "pending";
+  if (entry.ingested_at && entry.validation_ok) { statusClass = "status-done"; statusLabel = "processed"; }
+  else if (entry.source_type === "miniapp" && !entry.ingested_at) { statusClass = "status-miniapp"; statusLabel = "queued"; }
+
+  const nodesHtml = (entry.nodes_extracted || []).slice(0, 5)
+    .map(n => `<span class="node-tag">${escapeHtml(n)}</span>`).join("");
 
   card.innerHTML = `
-    <div class="note-card-header">
-      <span class="note-card-date">${fmtDate(note.note_date || note.created_at)}</span>
-      <span class="note-card-type ${typeClass}">${isUnprocessed ? "pending" : typeLabel}</span>
+    <div class="entry-card-header">
+      <span class="entry-card-date">${fmtDateTime(entry.created_at)}</span>
+      <span class="entry-card-status ${statusClass}">${statusLabel}</span>
     </div>
-    <div class="note-card-content">${escapeHtml(note.content)}</div>
-    ${tagsHtml ? `<div class="note-card-tags">${tagsHtml}</div>` : ""}
+    <div class="entry-card-content">${escapeHtml(entry.raw_text)}</div>
+    ${nodesHtml ? `<div class="entry-card-nodes">${nodesHtml}</div>` : ""}
   `;
-
-  card.addEventListener("click", () => openEditModal(note));
+  card.addEventListener("click", () => openEditModal(entry));
   return card;
 }
 
 // ══════════════════════════════════════════════════════════
 // EDIT MODAL
 // ══════════════════════════════════════════════════════════
-const editModal  = document.getElementById("edit-modal");
-const editTA     = document.getElementById("edit-textarea");
-
-// Attach unified mention engine to edit textarea too
+const editModal = document.getElementById("edit-modal");
+const editTA    = document.getElementById("edit-textarea");
 attachMentionEngine(editTA);
 
-function openEditModal(note) {
-  editingNoteId = note.id;
-  editTA.value  = note.content;
-  // Clear any stale token map from a previous edit session
+function openEditModal(entry) {
+  editingEntryId = entry.id;
+  editTA.value   = entry.raw_text;
   getMState(editTA).tokenMap = [];
-  document.getElementById("edit-modal-date").textContent = fmtDate(note.note_date || note.created_at);
+  document.getElementById("edit-modal-date").textContent = fmtDateTime(entry.created_at);
+
+  // Show extracted nodes if any
+  const nodesEl = document.getElementById("edit-modal-nodes");
+  const nodes   = entry.nodes_extracted || [];
+  nodesEl.innerHTML = nodes.length
+    ? nodes.map(n => `<span class="modal-node-badge">${escapeHtml(n)}</span>`).join("")
+    : "";
+
   editModal.classList.add("open");
   setTimeout(() => { editTA.focus(); editTA.setSelectionRange(editTA.value.length, editTA.value.length); }, 50);
 }
@@ -1695,96 +1051,86 @@ function openEditModal(note) {
 function closeEditModal() {
   editModal.classList.remove("open");
   closeMentionDropdown(editTA);
-  editingNoteId = null;
+  editingEntryId = null;
 }
 
 document.getElementById("edit-cancel-btn").addEventListener("click", closeEditModal);
-
-editModal.addEventListener("click", e => {
-  if (e.target === editModal) closeEditModal();
-});
+editModal.addEventListener("click", e => { if (e.target === editModal) closeEditModal(); });
 
 document.getElementById("edit-save-btn").addEventListener("click", async () => {
-  const rawContent = editTA.value.trim();
-  if (!rawContent) { toast("Note cannot be empty", "error"); return; }
-  if (!editingNoteId) return;
+  const rawText = editTA.value.trim();
+  if (!rawText) { toast("Entry cannot be empty", "error"); return; }
+  if (!editingEntryId) return;
 
-  // Serialise any new @mention or #node tokens added during editing
-  const ms = getMState(editTA);
-  const content = serialiseMentions(rawContent, ms.tokenMap);
+  const ms      = getMState(editTA);
+  const content = serialiseMentions(rawText, ms.tokenMap);
 
   const btn = document.getElementById("edit-save-btn");
-  btn.disabled = true;
-  btn.textContent = "Saving…";
+  btn.disabled = true; btn.textContent = "Saving…";
 
   try {
-    const res = await supaFetch(`/rest/v1/notes?id=eq.${editingNoteId}&user_id=eq.${userId}`, {
+    // Update entry — reset ingestion so it gets re-processed
+    const res = await supaFetch(`/rest/v1/entries?id=eq.${editingEntryId}&user_id=eq.${userId}`, {
       method: "PATCH",
       headers: { "Prefer": "return=minimal" },
       body: JSON.stringify({
-        content,
+        raw_text:    content,
         modified_at: new Date().toISOString(),
-        processed_at: null,
-        content_type: "free",
+        ingested_at: null,        // triggers re-ingestion
+        validation_ok: null,
+        nodes_extracted: [],
+        edges_extracted: [],
+      }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+
+    // Re-queue embed job
+    await supaFetch("/rest/v1/processing_queue", {
+      method: "POST",
+      headers: { "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        entry_id: editingEntryId,
+        user_id:  userId,
+        job_type: "embed",
+        status:   "ready",
       }),
     });
 
-    if (!res.ok) throw new Error(await res.text());
-
-    await supaFetch("/rest/v1/processing_queue", {
-      method: "POST",
-      body: JSON.stringify([
-        { note_id: editingNoteId, user_id: userId, job_type: "embed",   status: "pending" },
-        { note_id: editingNoteId, user_id: userId, job_type: "extract", status: "pending" },
-      ]),
-    });
-
-    toast("Note updated ✓");
+    toast("Entry updated ✓");
     closeEditModal();
-    if (document.getElementById("tab-history").classList.contains("active")) {
-      loadNotes(true);
-    }
+    if (document.getElementById("tab-history").classList.contains("active")) loadHistory(true);
 
   } catch (err) {
     toast(err.message, "error");
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Save";
+    btn.disabled = false; btn.textContent = "Save";
   }
 });
 
 document.getElementById("edit-delete-btn").addEventListener("click", async () => {
-  if (!editingNoteId) return;
-  if (!confirm("Delete this note? This cannot be undone.")) return;
+  if (!editingEntryId) return;
+  if (!confirm("Delete this entry? This cannot be undone.")) return;
 
   const btn = document.getElementById("edit-delete-btn");
-  btn.disabled = true;
-  btn.textContent = "Deleting…";
+  btn.disabled = true; btn.textContent = "Deleting…";
 
   try {
     const res = await supaFetch(
-      `/rest/v1/notes?id=eq.${editingNoteId}&user_id=eq.${userId}`,
+      `/rest/v1/entries?id=eq.${editingEntryId}&user_id=eq.${userId}`,
       { method: "DELETE" }
     );
     if (!res.ok) throw new Error(await res.text());
-
-    toast("Note deleted");
+    toast("Entry deleted");
     closeEditModal();
-    if (document.getElementById("tab-history").classList.contains("active")) {
-      loadNotes(true);
-    }
+    if (document.getElementById("tab-history").classList.contains("active")) loadHistory(true);
 
   } catch (err) {
     toast(err.message, "error");
   } finally {
-    btn.disabled = false;
-    btn.textContent = "Delete";
+    btn.disabled = false; btn.textContent = "Delete";
   }
 });
 
-// ══════════════════════════════════════════════════════════
-// Boot
-// ══════════════════════════════════════════════════════════
 boot();
 </script>
 </body>
