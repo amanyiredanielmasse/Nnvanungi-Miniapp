@@ -1,1137 +1,735 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<title>Thea — Digital Assistant</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Nnvanungi</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --bg:            #0e0f11;
-  --surface:       #161719;
-  --surface2:      #1c1e21;
-  --border:        #252729;
-  --border-hover:  #3a3c40;
-  --text:          #e8e9eb;
-  --text-dim:      #6b6e74;
-  --text-mid:      #9a9da3;
-  --accent:        #4ade80;
-  --accent-dim:    rgba(74,222,128,0.10);
-  --accent-border: rgba(74,222,128,0.25);
-  --danger:        #f87171;
-  --danger-dim:    rgba(248,113,113,0.10);
-  --warn:          #fbbf24;
-  --mono:          'IBM Plex Mono', monospace;
-  --sans:          'IBM Plex Sans', sans-serif;
-  --radius:        6px;
-  --safe-bottom:   env(safe-area-inset-bottom, 0px);
-}
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--tg-theme-bg-color, #fff);
+      color: var(--tg-theme-text-color, #000);
+      min-height: 100vh;
+      padding-bottom: 70px;
+    }
 
-html, body { height: 100%; overflow: hidden; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 14px;
-  line-height: 1.5;
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-}
+    /* ── Top bar ── */
+    #topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--tg-theme-hint-color, #ccc);
+      position: sticky;
+      top: 0;
+      background: var(--tg-theme-bg-color, #fff);
+      z-index: 10;
+    }
+    #topbar h1 { font-size: 17px; font-weight: 600; }
+    #token-badge {
+      font-size: 13px;
+      background: var(--tg-theme-button-color, #007aff);
+      color: var(--tg-theme-button-text-color, #fff);
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
 
-/* ── Loading ── */
-#loading {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 16px;
-}
-.loading-logo {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--accent);
-}
-.loading-logo span {
-  display: block; font-family: var(--sans); font-size: 26px; font-weight: 300;
-  letter-spacing: -0.02em; color: var(--text); margin-top: 2px;
-}
-.spinner {
-  width: 20px; height: 20px; border: 2px solid var(--border);
-  border-top-color: var(--accent); border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+    /* ── Nav tabs ── */
+    #nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      display: flex;
+      background: var(--tg-theme-bg-color, #fff);
+      border-top: 1px solid var(--tg-theme-hint-color, #ccc);
+      z-index: 10;
+    }
+    #nav button {
+      flex: 1;
+      padding: 10px 4px 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 11px;
+      color: var(--tg-theme-hint-color, #888);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    #nav button span.icon { font-size: 22px; line-height: 1; }
+    #nav button.active { color: var(--tg-theme-button-color, #007aff); }
 
-/* ── Error ── */
-#error-screen {
-  flex: 1; display: none; align-items: center; justify-content: center;
-  padding: 32px 24px; flex-direction: column; gap: 12px; text-align: center;
-}
-.error-icon { font-size: 32px; }
-.error-title { font-family: var(--mono); font-size: 13px; color: var(--danger); }
-.error-msg { font-size: 13px; color: var(--text-mid); line-height: 1.6; max-width: 280px; }
+    /* ── Screens ── */
+    .screen { display: none; padding: 16px; }
+    .screen.active { display: block; }
 
-/* ── App shell ── */
-#app { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+    /* ── Generic UI pieces ── */
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--tg-theme-hint-color, #ccc);
+      border-radius: 10px;
+      background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+      color: var(--tg-theme-text-color, #000);
+      font-size: 15px;
+      resize: none;
+      outline: none;
+    }
+    textarea:focus, input[type="text"]:focus {
+      border-color: var(--tg-theme-button-color, #007aff);
+    }
 
-/* ── Topbar ── */
-.topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; border-bottom: 1px solid var(--border);
-  background: var(--surface); flex-shrink: 0;
-}
-.topbar-brand {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--text-dim); line-height: 1.2;
-}
-.topbar-brand strong {
-  display: block; font-family: var(--sans); font-size: 15px; font-weight: 500;
-  color: var(--accent); letter-spacing: 0; text-transform: none;
-}
-.topbar-user { font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-align: right; }
+    button.primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--tg-theme-button-color, #007aff);
+      color: var(--tg-theme-button-text-color, #fff);
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button.primary:disabled { opacity: 0.5; cursor: default; }
 
-/* ── Tabs ── */
-.tabbar {
-  display: flex; border-bottom: 1px solid var(--border);
-  background: var(--surface); flex-shrink: 0;
-}
-.tab-btn {
-  flex: 1; padding: 10px 0; background: none; border: none;
-  border-bottom: 2px solid transparent; color: var(--text-dim);
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.10em;
-  text-transform: uppercase; cursor: pointer; transition: color 0.15s, border-color 0.15s;
-}
-.tab-btn:hover { color: var(--text-mid); }
-.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .mode-toggle button {
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--tg-theme-hint-color, #ccc);
+      background: none;
+      color: var(--tg-theme-text-color, #000);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .mode-toggle button.active {
+      background: var(--tg-theme-button-color, #007aff);
+      color: var(--tg-theme-button-text-color, #fff);
+      border-color: transparent;
+    }
 
-.tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-.tab-panel.active { display: flex; }
+    .toast {
+      position: fixed;
+      top: 60px; left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
 
-/* ════ WRITE TAB ════ */
-.write-meta {
-  display: flex; align-items: center; gap: 8px; padding: 10px 16px 0; flex-shrink: 0;
-}
-.write-date { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.08em; }
+    /* ── Search screen ── */
+    .search-type-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .search-type-toggle button {
+      flex: 1;
+      padding: 7px;
+      border-radius: 8px;
+      border: 1px solid var(--tg-theme-hint-color, #ccc);
+      background: none;
+      color: var(--tg-theme-text-color, #000);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .search-type-toggle button.active {
+      background: var(--tg-theme-button-color, #007aff);
+      color: var(--tg-theme-button-text-color, #fff);
+      border-color: transparent;
+    }
 
-.note-editor-wrap { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-#note-textarea {
-  flex: 1; width: 100%; background: transparent; border: none; outline: none;
-  resize: none; color: var(--text); font-family: var(--sans); font-size: 15px;
-  line-height: 1.65; padding: 14px 16px; overflow-y: auto; -webkit-overflow-scrolling: touch;
-}
-#note-textarea::placeholder { color: var(--text-dim); }
+    .result-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .result-item {
+      padding: 10px 12px;
+      background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+      border-radius: 10px;
+    }
+    .result-item .name { font-size: 15px; font-weight: 500; }
+    .result-item .sub  { font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-top: 2px; }
 
-/* ── Mention dropdown ── */
-.mention-dropdown {
-  position: fixed; background: var(--surface2); border: 1px solid var(--border-hover);
-  border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 500;
-  max-height: 200px; overflow-y: auto; display: none; min-width: 220px;
-}
-.mention-dropdown.open { display: block; }
-.mention-header {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 12px 4px; border-bottom: 1px solid var(--border);
-}
-.mention-header-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-dim); }
-.mention-header-at   { color: var(--accent); }
-.mention-header-hash { color: #a78bfa; }
-.mention-item {
-  padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--border);
-  transition: background 0.1s; display: flex; flex-direction: column; gap: 2px;
-}
-.mention-item:last-child { border-bottom: none; }
-.mention-item:hover, .mention-item.focused { background: var(--accent-dim); }
-.mention-item.focused-node { background: rgba(167,139,250,0.1); }
-.mention-name { font-size: 13px; color: var(--text); font-weight: 500; }
-.mention-sub  { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
-.mention-loading {
-  padding: 12px 14px; font-family: var(--mono); font-size: 11px;
-  color: var(--text-dim); display: flex; align-items: center; gap: 8px;
-}
-.mention-loading::before {
-  content: ""; display: inline-block; width: 10px; height: 10px;
-  border: 1.5px solid var(--border-hover); border-top-color: var(--accent);
-  border-radius: 50%; animation: spin 0.6s linear infinite; flex-shrink: 0;
-}
-.mention-empty { padding: 12px 14px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
-.mention-error { padding: 10px 14px; font-family: var(--mono); font-size: 11px; color: var(--danger); }
+    /* ── Todos screen ── */
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tg-theme-hint-color, #888);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 16px 0 8px;
+    }
+    .section-title:first-child { margin-top: 0; }
 
-.save-confirm {
-  padding: 8px 16px; background: var(--accent-dim); border-top: 1px solid var(--accent-border);
-  font-family: var(--mono); font-size: 11px; color: var(--accent); text-align: center;
-  display: none; flex-shrink: 0; animation: slideDown 0.2s ease;
-}
-@keyframes slideDown { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+    .todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .todo-check {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--tg-theme-hint-color, #ccc);
+      background: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+    }
+    .todo-check.done {
+      background: #34c759;
+      border-color: #34c759;
+      color: #fff;
+    }
+    .todo-body { flex: 1; min-width: 0; }
+    .todo-title { font-size: 15px; word-break: break-word; }
+    .todo-title.done { text-decoration: line-through; opacity: 0.5; }
+    .todo-meta { font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-top: 3px; }
 
-.write-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 16px calc(10px + var(--safe-bottom)); border-top: 1px solid var(--border);
-  background: var(--surface); flex-shrink: 0; gap: 8px;
-}
-.write-word-count { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+    .priority-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 7px;
+    }
+    .priority-dot.urgent { background: #ff3b30; }
+    .priority-dot.high   { background: #ff9500; }
+    .priority-dot.medium { background: #ffcc00; }
+    .priority-dot.low    { background: #34c759; }
 
-.btn {
-  display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono);
-  font-size: 11px; padding: 8px 16px; border-radius: var(--radius); border: none;
-  cursor: pointer; transition: all 0.15s; white-space: nowrap; letter-spacing: 0.04em;
-}
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-primary { background: var(--accent); color: #0e0f11; font-weight: 500; }
-.btn-primary:hover:not(:disabled) { background: #6ee7a0; }
-.btn-ghost { background: transparent; color: var(--text-mid); border: 1px solid var(--border); }
-.btn-ghost:hover:not(:disabled) { border-color: var(--border-hover); color: var(--text); }
-.btn-danger { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(248,113,113,0.2); }
-.btn-danger:hover:not(:disabled) { background: rgba(248,113,113,0.18); }
+    /* ── Memory screen ── */
+    .memory-field {
+      padding: 12px;
+      background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .memory-field .label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--tg-theme-hint-color, #888);
+      margin-bottom: 4px;
+    }
+    .memory-field .value { font-size: 15px; }
+    .memory-field .value.empty { color: var(--tg-theme-hint-color, #888); font-style: italic; }
 
-/* ════ ASK TAB ════ */
-.ask-history {
-  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 16px; display: flex; flex-direction: column; gap: 16px;
-}
-.ask-empty {
-  flex: 1; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 8px; color: var(--text-dim); font-size: 13px;
-}
-.ask-empty-icon { font-size: 28px; margin-bottom: 4px; }
-.ask-empty-hint { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
-.qa-block { display: flex; flex-direction: column; gap: 8px; }
-.bubble-q {
-  align-self: flex-end; background: var(--accent-dim); border: 1px solid var(--accent-border);
-  border-radius: 12px 12px 4px 12px; padding: 10px 14px; font-size: 14px;
-  color: var(--text); max-width: 85%; line-height: 1.5;
-}
-.bubble-a {
-  align-self: flex-start; background: var(--surface); border: 1px solid var(--border);
-  border-radius: 4px 12px 12px 12px; padding: 12px 14px; font-size: 14px;
-  color: var(--text); max-width: 92%; line-height: 1.65;
-}
-.bubble-a.thinking { color: var(--text-dim); font-family: var(--mono); font-size: 11px; }
-.bubble-a .answer-text { white-space: pre-wrap; }
-.answer-sources {
-  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
-  display: flex; flex-wrap: wrap; gap: 4px;
-}
-.source-chip {
-  font-family: var(--mono); font-size: 9px; padding: 2px 7px; border-radius: 2px;
-  background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border);
-}
-.ask-input-bar {
-  display: flex; gap: 8px; padding: 10px 16px calc(10px + var(--safe-bottom));
-  border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0;
-  align-items: flex-end;
-}
-#ask-input {
-  flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
-  color: var(--text); font-family: var(--sans); font-size: 14px; padding: 9px 12px;
-  outline: none; resize: none; min-height: 38px; max-height: 120px; line-height: 1.4;
-  overflow-y: auto; transition: border-color 0.15s;
-}
-#ask-input:focus { border-color: var(--accent); }
-#ask-input::placeholder { color: var(--text-dim); }
-.ask-send-btn {
-  width: 38px; height: 38px; flex-shrink: 0; border-radius: var(--radius);
-  background: var(--accent); border: none; cursor: pointer; display: flex;
-  align-items: center; justify-content: center; transition: background 0.15s; color: #0e0f11;
-}
-.ask-send-btn:hover:not(:disabled) { background: #6ee7a0; }
-.ask-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.ask-send-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    .sub-balance {
+      padding: 12px;
+      background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sub-balance .label { font-size: 13px; color: var(--tg-theme-hint-color, #888); }
+    .sub-balance .value { font-size: 20px; font-weight: 700; }
 
-/* ════ HISTORY TAB ════ */
-.history-filters {
-  display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--border);
-  overflow-x: auto; flex-shrink: 0; -webkit-overflow-scrolling: touch;
-}
-.filter-chip {
-  font-family: var(--mono); font-size: 10px; padding: 4px 10px; border-radius: 100px;
-  border: 1px solid var(--border); color: var(--text-dim); background: transparent;
-  cursor: pointer; white-space: nowrap; transition: all 0.15s;
-  letter-spacing: 0.06em; text-transform: uppercase;
-}
-.filter-chip:hover { border-color: var(--border-hover); color: var(--text-mid); }
-.filter-chip.active { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
-.history-list {
-  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 12px 16px; display: flex; flex-direction: column; gap: 8px;
-}
-.history-empty {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 6px; color: var(--text-dim); font-size: 13px;
-}
-.entry-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 12px 14px; cursor: pointer;
-  transition: border-color 0.15s;
-}
-.entry-card:hover { border-color: var(--border-hover); }
-.entry-card-header {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
-}
-.entry-card-date { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
-.entry-card-status {
-  font-family: var(--mono); font-size: 9px; padding: 2px 6px;
-  border-radius: 2px; text-transform: uppercase; letter-spacing: 0.06em;
-}
-.status-done    { background: rgba(74,222,128,0.1);  color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
-.status-pending { background: rgba(251,191,36,0.1);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
-.status-miniapp { background: rgba(167,139,250,0.1); color: #a78bfa; border: 1px solid rgba(167,139,250,0.2); }
-.entry-card-content {
-  font-size: 13px; color: var(--text-mid); line-height: 1.5;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
-}
-.entry-card-nodes {
-  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
-}
-.node-tag {
-  font-family: var(--mono); font-size: 9px; padding: 1px 6px; border-radius: 2px;
-  background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border);
-}
-.load-more-row { display: flex; justify-content: center; padding: 8px 0 4px; }
+    /* ── Loading / empty states ── */
+    .state-msg {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--tg-theme-hint-color, #888);
+      font-size: 15px;
+    }
 
-/* ════ EDIT MODAL ════ */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
-  display: none; align-items: flex-end;
-}
-.modal-overlay.open { display: flex; }
-.modal-sheet {
-  width: 100%; background: var(--surface); border-top: 1px solid var(--border);
-  border-radius: 14px 14px 0 0; display: flex; flex-direction: column;
-  max-height: 90dvh; animation: slideUp 0.25s ease;
-}
-@keyframes slideUp { from { transform:translateY(40px); opacity:0; } to { transform:translateY(0); opacity:1; } }
-.modal-handle {
-  width: 36px; height: 4px; background: var(--border-hover);
-  border-radius: 2px; margin: 10px auto 0; flex-shrink: 0;
-}
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px 10px; flex-shrink: 0;
-}
-.modal-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
-.modal-meta  { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
-.modal-body  { flex: 1; overflow-y: auto; padding: 0 16px 8px; display: flex; flex-direction: column; gap: 10px; }
-#edit-textarea {
-  width: 100%; min-height: 180px; background: var(--bg); border: 1px solid var(--border);
-  border-radius: var(--radius); color: var(--text); font-family: var(--sans);
-  font-size: 14px; line-height: 1.65; padding: 12px; outline: none; resize: none;
-  transition: border-color 0.15s;
-}
-#edit-textarea:focus { border-color: var(--accent); }
-
-/* nodes extracted badge in modal */
-.modal-nodes { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 0 4px; }
-.modal-node-badge {
-  font-family: var(--mono); font-size: 9px; padding: 2px 7px; border-radius: 2px;
-  background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-border);
-}
-
-.modal-footer {
-  display: flex; gap: 8px; padding: 10px 16px calc(10px + var(--safe-bottom));
-  border-top: 1px solid var(--border); flex-shrink: 0;
-}
-.modal-footer .btn { flex: 1; justify-content: center; }
-
-/* ── Toast ── */
-#toast {
-  position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%;
-  transform: translateX(-50%) translateY(8px); background: var(--surface2);
-  border: 1px solid var(--border-hover); border-radius: var(--radius); padding: 8px 16px;
-  font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0;
-  pointer-events: none; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; z-index: 300;
-}
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-#toast.success { color: var(--accent); border-color: var(--accent-border); }
-#toast.error   { color: var(--danger); border-color: rgba(248,113,113,0.3); }
-</style>
+    /* ── Auth screen ── */
+    #auth-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 32px;
+      text-align: center;
+      gap: 12px;
+    }
+    #auth-screen h2 { font-size: 22px; }
+    #auth-screen p  { color: var(--tg-theme-hint-color, #888); font-size: 15px; }
+  </style>
 </head>
 <body>
 
-<div id="loading">
-  <div class="loading-logo">DA<span>Digital Assistant</span></div>
-  <div class="spinner"></div>
+<!-- Auth / loading state -->
+<div id="auth-screen">
+  <span style="font-size:48px">🧠</span>
+  <h2>Nnvanungi</h2>
+  <p id="auth-msg">Starting up…</p>
 </div>
 
-<div id="error-screen">
-  <div class="error-icon">⛔</div>
-  <div class="error-title">Access Denied</div>
-  <div class="error-msg" id="error-msg">Open the bot and link your account first.</div>
+<!-- Main app (hidden until authed) -->
+<div id="app" style="display:none">
+
+  <div id="topbar">
+    <h1>Nnvanungi</h1>
+    <div id="token-badge">— tokens</div>
+  </div>
+
+  <!-- HOME: send entry or agent message -->
+  <div id="screen-home" class="screen active">
+    <div class="mode-toggle">
+      <button class="active" onclick="setMode('journal')">📝 Journal</button>
+      <button onclick="setMode('agent')">🤖 Agent</button>
+    </div>
+    <textarea id="entry-text" rows="5" placeholder="Write a memory or tell me what to do…"></textarea>
+    <button class="primary" id="send-btn" onclick="sendEntry()">Send</button>
+    <div id="send-result" style="margin-top:12px; font-size:14px; color: var(--tg-theme-hint-color,#888);"></div>
+  </div>
+
+  <!-- SEARCH -->
+  <div id="screen-search" class="screen">
+    <div class="search-type-toggle">
+      <button class="active" onclick="setSearchType('contacts')">👤 Contacts</button>
+      <button onclick="setSearchType('nodes')">🔗 Nodes</button>
+    </div>
+    <input type="text" id="search-input" placeholder="Search…" oninput="onSearchInput()" />
+    <div id="search-results" class="result-list">
+      <div class="state-msg">Start typing to search.</div>
+    </div>
+  </div>
+
+  <!-- TODOS -->
+  <div id="screen-todos" class="screen">
+    <div id="todos-list"><div class="state-msg">Loading…</div></div>
+  </div>
+
+  <!-- MEMORY -->
+  <div id="screen-memory" class="screen">
+    <div id="memory-content"><div class="state-msg">Loading…</div></div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav id="nav">
+    <button class="active" onclick="switchTab('home')">
+      <span class="icon">✏️</span>Home
+    </button>
+    <button onclick="switchTab('search')">
+      <span class="icon">🔍</span>Search
+    </button>
+    <button onclick="switchTab('todos')">
+      <span class="icon">✅</span>Todos
+    </button>
+    <button onclick="switchTab('memory')">
+      <span class="icon">🧠</span>Memory
+    </button>
+  </nav>
 </div>
 
-<div id="app">
-  <div class="topbar">
-    <div class="topbar-brand">DA<strong>Digital Assistant</strong></div>
-    <div class="topbar-user" id="topbar-user"></div>
-  </div>
-
-  <div class="tabbar">
-    <button class="tab-btn active" data-tab="write">✏️ Write</button>
-    <button class="tab-btn"        data-tab="ask"  >🔍 Ask</button>
-    <button class="tab-btn"        data-tab="history">📋 Entries</button>
-  </div>
-
-  <!-- WRITE TAB -->
-  <div class="tab-panel active" id="tab-write">
-    <div class="write-meta">
-      <span class="write-date" id="write-date"></span>
-    </div>
-    <div class="note-editor-wrap">
-      <textarea id="note-textarea"
-        placeholder="What's on your mind? Use @Name for people/contacts, #Node for projects & ideas…"
-        spellcheck="true"></textarea>
-      <div class="mention-dropdown" id="mention-dropdown"></div>
-    </div>
-    <div class="save-confirm" id="save-confirm">✓ Saved — Thea will extract nodes & edges tonight</div>
-    <div class="write-toolbar">
-      <span class="write-word-count" id="word-count">0 words</span>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" id="clear-btn">Clear</button>
-        <button class="btn btn-primary" id="save-btn">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ASK TAB -->
-  <div class="tab-panel" id="tab-ask">
-    <div class="ask-history" id="ask-history">
-      <div class="ask-empty" id="ask-empty">
-        <div class="ask-empty-icon">🧠</div>
-        <div>Ask anything about your notes</div>
-        <div class="ask-empty-hint">Searches across all your memory</div>
-      </div>
-    </div>
-    <div class="ask-input-bar">
-      <textarea id="ask-input" placeholder="Ask your brain…" rows="1"></textarea>
-      <button class="ask-send-btn" id="ask-send-btn" disabled>
-        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- HISTORY TAB -->
-  <div class="tab-panel" id="tab-history">
-    <div class="history-filters" id="history-filters">
-      <button class="filter-chip active" data-filter="all">All</button>
-      <button class="filter-chip" data-filter="done">Processed</button>
-      <button class="filter-chip" data-filter="pending">Pending</button>
-      <button class="filter-chip" data-filter="miniapp">From app</button>
-    </div>
-    <div class="history-list" id="history-list">
-      <div class="history-empty"><div style="font-size:24px">⏳</div><div>Loading…</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- EDIT MODAL -->
-<div class="modal-overlay" id="edit-modal">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <span class="modal-title">Edit entry</span>
-      <span class="modal-meta" id="edit-modal-date"></span>
-    </div>
-    <div class="modal-body">
-      <div class="modal-nodes" id="edit-modal-nodes"></div>
-      <textarea id="edit-textarea" spellcheck="true"
-        placeholder="Edit your entry… Use @Name for contacts, #Node for projects"></textarea>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger"  id="edit-delete-btn">Delete</button>
-      <button class="btn btn-ghost"   id="edit-cancel-btn">Cancel</button>
-      <button class="btn btn-primary" id="edit-save-btn">Save</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
+<div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════════════════
-// CONFIG — aligned to real DB schema
-// ══════════════════════════════════════════════════════════
-const SUPABASE_URL    = "https://zixysyctnynphstyvvgx.supabase.co";
-const SUPABASE_ANON   = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppeHlzeWN0bnlucGhzdHl2dngiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc3NDk0OTQ0MCwiZXhwIjoyMDkwNTI1NDQwfQ.Ilu-T02HJfT0GnMzalvfxdQHLXBRkHxDJkqriFUEPJo";
-const AUTH_EDGE       = `${SUPABASE_URL}/functions/v1/miniapp-auth`;
-const SEARCH_EDGE     = `${SUPABASE_URL}/functions/v1/miniapp-search`;
-const QUERY_EDGE      = `${SUPABASE_URL}/functions/v1/query-memory`;
+// ═══════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════
+const SUPABASE_URL = 'https://zixysyctnynphstyvvgx.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppeHlzeWN0bnlucGhzdHl2dmd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDk0NzMsImV4cCI6MjA5MDUyNTQ3M30.yd47GXbapX4BgDKmh8YkBqLhFvEBa6OIqvpFv1qmFUk';
+const FN = (name) => `${SUPABASE_URL}/functions/v1/${name}`;
 
-// ══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // STATE
-// ══════════════════════════════════════════════════════════
-let accessToken    = null;
-let tokenExpiresAt = 0;
-let userId         = null;
-let displayName    = null;
-let timezone       = "Africa/Kampala";
-let currentFilter  = "all";
-let historyOffset  = 0;
-const PAGE_SIZE    = 20;
-let allLoaded      = false;
-let editingEntryId = null;
+// ═══════════════════════════════════════════════════
+let accessToken = null;
+let userId      = null;
+let sendMode    = 'journal';
+let searchType  = 'contacts';
+let searchTimer = null;
 
-let _tokenResolve;
-const tokenReady = new Promise(r => { _tokenResolve = r; });
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+window.Telegram.WebApp.ready();
+window.Telegram.WebApp.expand();
 
-// ══════════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════════
-async function maybeRefreshToken() {
-  const nowSec = Math.floor(Date.now() / 1000);
-  if (tokenExpiresAt && nowSec > tokenExpiresAt - 300) {
-    try {
-      const tg = window.Telegram?.WebApp;
-      const initData = tg?.initData || "";
-      if (!initData) return;
-      const res = await fetch(AUTH_EDGE, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.access_token) {
-          accessToken    = data.access_token;
-          tokenExpiresAt = data.expires_at ?? (nowSec + 3600);
-        }
-      }
-    } catch (_) {}
-  }
-}
+async function init() {
+  const tg = window.Telegram.WebApp;
+  const initData = tg.initData;
 
-async function supaFetch(path, opts = {}) {
-  await tokenReady;
-  await maybeRefreshToken();
-  return fetch(SUPABASE_URL + path, {
-    ...opts,
-    headers: {
-      "Content-Type": "application/json",
-      "apikey":        SUPABASE_ANON,
-      "Authorization": `Bearer ${accessToken}`,
-      ...(opts.headers || {}),
-    },
-  });
-}
-
-let toastTimer;
-function toast(msg, type = "success") {
-  const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.className = `show ${type}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ""; }, 2800);
-}
-
-function fmtDate(iso) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-}
-
-function fmtDateTime(iso) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
-function wordCount(text) {
-  const t = text.trim();
-  return t === "" ? 0 : t.split(/\s+/).length;
-}
-
-function escapeHtml(s) {
-  return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
-
-// ══════════════════════════════════════════════════════════
-// BOOT
-// ══════════════════════════════════════════════════════════
-async function boot() {
-  const tg = window.Telegram?.WebApp;
-  if (tg) { tg.expand(); tg.ready(); tg.enableClosingConfirmation?.(); }
-
-  const initData = tg?.initData || "";
   if (!initData) {
-    showError("Open this app through Telegram. Direct browser access is not supported.");
+    // Dev fallback: no initData means we're in a browser, not Telegram
+    document.getElementById('auth-msg').textContent =
+      'Open this inside Telegram to use the app.';
     return;
   }
 
+  document.getElementById('auth-msg').textContent = 'Signing you in…';
+
   try {
-    const res  = await fetch(AUTH_EDGE, {
-      method: "POST", headers: { "Content-Type": "application/json" },
+    const res = await fetch(FN('miniapp-auth'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData }),
     });
     const data = await res.json();
-    if (!res.ok) { showError(data.error || "Authentication failed."); return; }
 
-    accessToken    = data.access_token;
-    tokenExpiresAt = data.expires_at ?? (Math.floor(Date.now() / 1000) + 3600);
-    userId         = data.user_id;
-    displayName    = data.display_name;
-    timezone       = data.timezone || "Africa/Kampala";
-
-    _tokenResolve();
-
-    document.getElementById("topbar-user").textContent  = displayName || "";
-    document.getElementById("write-date").textContent   = fmtDate(new Date().toISOString());
-    document.getElementById("loading").style.display    = "none";
-    document.getElementById("app").style.display        = "flex";
-
-  } catch (err) { showError("Network error: " + err.message); }
-}
-
-function showError(msg) {
-  document.getElementById("loading").style.display    = "none";
-  document.getElementById("error-screen").style.display = "flex";
-  document.getElementById("error-msg").textContent    = msg;
-}
-
-// ══════════════════════════════════════════════════════════
-// TABS
-// ══════════════════════════════════════════════════════════
-document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const tab = btn.dataset.tab;
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById(`tab-${tab}`).classList.add("active");
-    if (tab === "history") { historyOffset = 0; allLoaded = false; loadHistory(true); }
-  });
-});
-
-// ══════════════════════════════════════════════════════════
-// WRITE TAB — saves to "entries" table (raw_text, source_type)
-// ══════════════════════════════════════════════════════════
-const noteTA      = document.getElementById("note-textarea");
-const wordCountEl = document.getElementById("word-count");
-const saveConfirm = document.getElementById("save-confirm");
-
-noteTA.addEventListener("input", () => {
-  const wc = wordCount(noteTA.value);
-  wordCountEl.textContent = `${wc} word${wc === 1 ? "" : "s"}`;
-  saveConfirm.style.display = "none";
-});
-attachMentionEngine(noteTA);
-
-document.getElementById("clear-btn").addEventListener("click", () => {
-  if (!noteTA.value.trim()) return;
-  if (!confirm("Clear this note?")) return;
-  noteTA.value = "";
-  wordCountEl.textContent = "0 words";
-  saveConfirm.style.display = "none";
-  getMState(noteTA).tokenMap = [];
-  closeMentionDropdown(noteTA);
-});
-
-document.getElementById("save-btn").addEventListener("click", saveEntry);
-
-async function saveEntry() {
-  const rawText = noteTA.value.trim();
-  if (!rawText) { toast("Nothing to save", "error"); return; }
-
-  // Enrich the raw text with any @mention / #node names we resolved
-  // The ingest pipeline will see these names and link them to existing nodes
-  const ms      = getMState(noteTA);
-  const content = serialiseMentions(rawText, ms.tokenMap);
-
-  const btn = document.getElementById("save-btn");
-  btn.disabled = true; btn.textContent = "Saving…";
-
-  try {
-    // Insert into "entries" — the same table the bot writes to
-    const res = await supaFetch("/rest/v1/entries", {
-      method: "POST",
-      headers: { "Prefer": "return=representation", "Accept": "application/json" },
-      body: JSON.stringify({
-        user_id:     userId,
-        raw_text:    content,
-        source_type: "miniapp",   // distinguishable from "telegram"
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      let errMsg = "Failed to save";
-      try { errMsg = JSON.parse(errText).message || errMsg; } catch {}
-      throw new Error(errMsg);
+    if (!res.ok || !data.access_token) {
+      document.getElementById('auth-msg').textContent =
+        data.error || 'Sign-in failed. Please restart.';
+      return;
     }
 
-    const saved   = await res.json();
-    const entryId = Array.isArray(saved) ? saved[0]?.id : saved?.id;
-    if (!entryId) throw new Error("Saved but no ID returned");
+    accessToken = data.access_token;
+    userId      = data.user_id;
 
-    // Queue embed job — same as ingest-entry does in step 9
-    await supaFetch("/rest/v1/processing_queue", {
-      method: "POST",
-      headers: { "Prefer": "return=minimal" },
-      body: JSON.stringify({
-        entry_id: entryId,   // ← correct column name
-        user_id:  userId,
-        job_type: "embed",   // ← valid enum value
-        status:   "ready",   // ← ready for processor to pick up
-      }),
-    });
+    // Show app
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
 
-    // Clear
-    noteTA.value = "";
-    ms.tokenMap  = [];
-    wordCountEl.textContent = "0 words";
-    saveConfirm.style.display = "block";
-    setTimeout(() => { saveConfirm.style.display = "none"; }, 4000);
-    toast("Entry saved ✓");
+    loadTokenBalance();
+    loadTodos();
+    loadMemory();
 
   } catch (err) {
-    toast(err.message, "error");
-  } finally {
-    btn.disabled = false; btn.textContent = "Save";
+    document.getElementById('auth-msg').textContent = 'Network error. Try again.';
+    console.error(err);
   }
 }
 
-// ══════════════════════════════════════════════════════════
-// MENTION ENGINE (@contacts  #nodes)
-// ══════════════════════════════════════════════════════════
-const TRIGGERS = { "@": "contacts", "#": "nodes" };
-const mentionState = new WeakMap();
-
-function getMState(ta) {
-  if (!mentionState.has(ta)) {
-    mentionState.set(ta, {
-      active: false, trigger: "", triggerStart: -1,
-      query: "", focusIdx: -1, debounce: null, tokenMap: [],
-    });
-  }
-  return mentionState.get(ta);
-}
-
-const mentionDD = document.getElementById("mention-dropdown");
-let mentionTargetTA = null;
-
-function attachMentionEngine(ta) {
-  ta.addEventListener("input",   () => onMentionInput(ta));
-  ta.addEventListener("keydown", (e) => onMentionKeydown(ta, e));
-  ta.addEventListener("blur",    () => setTimeout(() => { if (mentionTargetTA === ta) closeMentionDropdown(ta); }, 150));
-}
-
-function onMentionInput(ta) {
-  const ms  = getMState(ta);
-  const pos = ta.selectionStart;
-  const before = ta.value.substring(0, pos);
-  let foundTrigger = "", foundIdx = -1;
-
-  for (const ch of Object.keys(TRIGGERS)) {
-    const idx = before.lastIndexOf(ch);
-    if (idx === -1) continue;
-    const frag = before.substring(idx + 1);
-    if (!/\s/.test(frag) && idx > foundIdx) { foundIdx = idx; foundTrigger = ch; }
-  }
-
-  if (foundIdx === -1) { closeMentionDropdown(ta); return; }
-
-  ms.active = true; ms.trigger = foundTrigger; ms.triggerStart = foundIdx;
-  ms.query  = before.substring(foundIdx + 1); ms.focusIdx = -1;
-  mentionTargetTA = ta;
-
-  clearTimeout(ms.debounce);
-  showMentionState(ta, "loading");
-  ms.debounce = setTimeout(() => runMentionSearch(ta), ms.query.length === 0 ? 0 : 200);
-}
-
-function onMentionKeydown(ta, e) {
-  const ms = getMState(ta);
-  if (!ms.active || !mentionDD.classList.contains("open")) return;
-  const items = mentionDD.querySelectorAll(".mention-item");
-  if (e.key === "ArrowDown") { e.preventDefault(); ms.focusIdx = Math.min(ms.focusIdx + 1, items.length - 1); renderFocus(items, ms); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); ms.focusIdx = Math.max(ms.focusIdx - 1, 0); renderFocus(items, ms); }
-  else if (e.key === "Enter" || e.key === "Tab") {
-    const focused = mentionDD.querySelector(".mention-item.focused");
-    if (focused) { e.preventDefault(); focused.click(); }
-  } else if (e.key === "Escape") { e.preventDefault(); closeMentionDropdown(ta); }
-}
-
-function renderFocus(items, ms) {
-  items.forEach((item, i) => item.classList.toggle("focused", i === ms.focusIdx));
-}
-
-function showMentionState(ta, state, message = "") {
-  const ms = getMState(ta);
-  const label = ms.trigger === "@" ? "Contacts" : "Nodes";
-  const hClass = ms.trigger === "@" ? "mention-header-at" : "mention-header-hash";
-  let inner = "";
-  if (state === "loading") inner = `<div class="mention-loading">Searching ${label.toLowerCase()}…</div>`;
-  else if (state === "empty") inner = `<div class="mention-empty">No ${label.toLowerCase()} found</div>`;
-  else if (state === "error") inner = `<div class="mention-error">⚠ ${message || "Search failed"}</div>`;
-
-  mentionDD.innerHTML = `<div class="mention-header"><span class="mention-header-label ${hClass}">${ms.trigger} ${label}</span></div>${inner}`;
-  positionMentionDropdown(ta);
-  mentionDD.classList.add("open");
-}
-
-async function runMentionSearch(ta) {
-  const ms = getMState(ta);
-  if (!ms.active) return;
-  await tokenReady; await maybeRefreshToken();
+// ═══════════════════════════════════════════════════
+// TOKEN BALANCE
+// ═══════════════════════════════════════════════════
+async function loadTokenBalance() {
   try {
-    const res = await fetch(SEARCH_EDGE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
-      body: JSON.stringify({ type: TRIGGERS[ms.trigger], query: ms.query, limit: 8 }),
-    });
-    if (!ms.active) return;
-    if (!res.ok) { const err = await res.json().catch(() => ({})); showMentionState(ta, "error", err.error); return; }
-    renderMentionResults(ta, await res.json());
-  } catch (err) { if (ms.active) showMentionState(ta, "error", err.message); }
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/subscriptions?user_id=eq.${userId}&status=eq.active&select=tokens_remaining,tier&limit=1`,
+      { headers: authHeaders() }
+    );
+    const data = await res.json();
+    const sub = data?.[0];
+    if (sub) {
+      document.getElementById('token-badge').textContent =
+        `${sub.tokens_remaining} tokens`;
+    } else {
+      document.getElementById('token-badge').textContent = 'No plan';
+    }
+  } catch (e) { console.error(e); }
 }
 
-function renderMentionResults(ta, results) {
-  const ms = getMState(ta);
-  const label = ms.trigger === "@" ? "Contacts" : "Nodes";
-  const hClass = ms.trigger === "@" ? "mention-header-at" : "mention-header-hash";
-  if (!results || results.length === 0) { showMentionState(ta, "empty"); return; }
-  ms.focusIdx = -1;
-
-  mentionDD.innerHTML = `
-    <div class="mention-header"><span class="mention-header-label ${hClass}">${ms.trigger} ${label}</span></div>
-    ${results.map((r, i) => `
-      <div class="mention-item" data-idx="${i}" data-id="${escapeHtml(r.id)}" data-name="${escapeHtml(r.name)}">
-        <div class="mention-name">${escapeHtml(r.name)}</div>
-        ${r.sub ? `<div class="mention-sub">${escapeHtml(r.sub)}</div>` : ""}
-      </div>
-    `).join("")}
-  `;
-
-  mentionDD.querySelectorAll(".mention-item").forEach(item => {
-    item.addEventListener("mousedown", (e) => { e.preventDefault(); insertMention(ta, item.dataset.id, item.dataset.name); });
+// ═══════════════════════════════════════════════════
+// HOME — SEND ENTRY
+// ═══════════════════════════════════════════════════
+function setMode(mode) {
+  sendMode = mode;
+  document.querySelectorAll('.mode-toggle button').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && mode === 'journal') || (i === 1 && mode === 'agent'));
   });
-
-  positionMentionDropdown(ta);
-  mentionDD.classList.add("open");
+  document.getElementById('entry-text').placeholder =
+    mode === 'journal'
+      ? 'Write a memory, note, or thought…'
+      : 'Tell me what to do — I\'ll handle it and reply on Telegram.';
 }
 
-function insertMention(ta, id, name) {
-  const ms = getMState(ta);
-  const before   = ta.value.substring(0, ms.triggerStart);
-  const after    = ta.value.substring(ta.selectionStart);
-  const inserted = `${ms.trigger}${name}`;
+async function sendEntry() {
+  const text = document.getElementById('entry-text').value.trim();
+  if (!text) return;
 
-  ta.value = before + inserted + "\u00A0" + after;
-  const newPos = before.length + inserted.length + 1;
-  ta.setSelectionRange(newPos, newPos);
-  ta.focus();
-
-  ms.tokenMap.push({ trigger: ms.trigger, displayText: name, id, type: TRIGGERS[ms.trigger] });
-  closeMentionDropdown(ta);
-
-  if (ta === noteTA) {
-    const wc = wordCount(ta.value);
-    wordCountEl.textContent = `${wc} word${wc === 1 ? "" : "s"}`;
-  }
-}
-
-function closeMentionDropdown(ta) {
-  if (ta) {
-    const ms = getMState(ta);
-    ms.active = false; ms.trigger = ""; ms.triggerStart = -1;
-    ms.query = ""; ms.focusIdx = -1;
-    clearTimeout(ms.debounce);
-  }
-  mentionDD.classList.remove("open");
-  mentionTargetTA = null;
-}
-
-function positionMentionDropdown(ta) {
-  const vp = window.visualViewport;
-  const vpH = vp ? vp.height : window.innerHeight;
-  const vpY = vp ? vp.offsetTop : 0;
-  const vpX = vp ? vp.offsetLeft : 0;
-  const taRect  = ta.getBoundingClientRect();
-  const ddWidth = Math.min(Math.max(taRect.width - 16, 220), 340);
-  const ddMaxH  = 200;
-  const spaceAbove = taRect.top - vpY;
-  const spaceBelow = vpH - (taRect.bottom - vpY);
-  let top, left;
-  left = Math.max(8, taRect.left + vpX + 8);
-  if (spaceAbove > ddMaxH || spaceAbove > spaceBelow) {
-    top = Math.max(vpY + 4, taRect.top + vpY - ddMaxH - 4);
-  } else {
-    top = taRect.bottom + vpY + 4;
-  }
-  mentionDD.style.cssText = `position:fixed;left:${left}px;top:${top}px;width:${ddWidth}px;max-height:${ddMaxH}px;`;
-}
-
-// Serialise @Name → @[Name](contact:id) and #Node → #[Node](node:id)
-// The ingest pipeline can parse these to pre-link nodes without guessing
-function serialiseMentions(rawText, tokenMap) {
-  if (!tokenMap || tokenMap.length === 0) return rawText;
-  let result = rawText;
-  const sorted = [...tokenMap].sort((a, b) => b.displayText.length - a.displayText.length);
-  for (const t of sorted) {
-    const plain      = `${t.trigger}${t.displayText}`;
-    const structured = `${t.trigger}[${t.displayText}](${t.type === "contacts" ? "contact" : "node"}:${t.id})`;
-    const re = new RegExp(escapeRegex(plain) + "(?!\\])", "");
-    result = result.replace(re, structured);
-  }
-  return result;
-}
-
-// ══════════════════════════════════════════════════════════
-// ASK TAB
-// ══════════════════════════════════════════════════════════
-const askInput   = document.getElementById("ask-input");
-const askSendBtn = document.getElementById("ask-send-btn");
-const askHistory = document.getElementById("ask-history");
-
-askInput.addEventListener("input", () => {
-  askSendBtn.disabled = !askInput.value.trim();
-  askInput.style.height = "auto";
-  askInput.style.height = Math.min(askInput.scrollHeight, 120) + "px";
-});
-askInput.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!askSendBtn.disabled) sendQuery(); }
-});
-askSendBtn.addEventListener("click", sendQuery);
-
-async function sendQuery() {
-  const q = askInput.value.trim(); if (!q) return;
-  document.getElementById("ask-empty")?.remove();
-
-  const qBlock = document.createElement("div");
-  qBlock.className = "qa-block";
-  qBlock.innerHTML = `
-    <div class="bubble-q">${escapeHtml(q)}</div>
-    <div class="bubble-a thinking" id="thinking-bubble">🔍 Searching your memory…</div>
-  `;
-  askHistory.appendChild(qBlock);
-  askHistory.scrollTop = askHistory.scrollHeight;
-
-  askInput.value = ""; askInput.style.height = "auto"; askSendBtn.disabled = true;
+  const btn = document.getElementById('send-btn');
+  const result = document.getElementById('send-result');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  result.textContent = '';
 
   try {
-    const res  = await fetch(QUERY_EDGE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
-      body: JSON.stringify({ query: q, top_k: 8, hop_depth: 1 }),
+    const res = await fetch(FN('miniapp-send'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ text, mode: sendMode }),
     });
     const data = await res.json();
-    const thinkEl = document.getElementById("thinking-bubble");
 
-    if (!res.ok || data.error) {
-      if (thinkEl) thinkEl.outerHTML = `<div class="bubble-a" style="color:var(--danger)">${escapeHtml(data.error || "Query failed")}</div>`;
-      return;
-    }
-
-    const sourcesHtml = data.sources?.length
-      ? `<div class="answer-sources">
-          ${data.note_count    ? `<span class="source-chip">📄 ${data.note_count} entry</span>` : ""}
-          ${data.contact_count ? `<span class="source-chip">👤 ${data.contact_count} contact</span>` : ""}
-          ${(data.sources || []).slice(0, 4).map(s => `<span class="source-chip">${fmtDate(s.date)}</span>`).join("")}
-        </div>` : "";
-
-    if (thinkEl) {
-      thinkEl.className = "bubble-a"; thinkEl.removeAttribute("id");
-      thinkEl.innerHTML = `<div class="answer-text">${escapeHtml(data.answer || "")}</div>${sourcesHtml}`;
-    }
-    askHistory.scrollTop = askHistory.scrollHeight;
-
-  } catch (err) {
-    const thinkEl = document.getElementById("thinking-bubble");
-    if (thinkEl) thinkEl.outerHTML = `<div class="bubble-a" style="color:var(--danger)">${escapeHtml(err.message)}</div>`;
-  }
-}
-
-// ══════════════════════════════════════════════════════════
-// HISTORY TAB — reads from "entries" table
-// ══════════════════════════════════════════════════════════
-document.querySelectorAll(".filter-chip").forEach(chip => {
-  chip.addEventListener("click", () => {
-    document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
-    chip.classList.add("active");
-    currentFilter = chip.dataset.filter;
-    historyOffset = 0; allLoaded = false;
-    loadHistory(true);
-  });
-});
-
-async function loadHistory(reset = false) {
-  const list = document.getElementById("history-list");
-  if (reset) {
-    list.innerHTML = `<div class="history-empty"><div style="font-size:20px">⏳</div><div>Loading…</div></div>`;
-    historyOffset = 0; allLoaded = false;
-  }
-  if (allLoaded) return;
-
-  try {
-    // Build filter
-    let url = `/rest/v1/entries?user_id=eq.${userId}&order=created_at.desc&limit=${PAGE_SIZE}&offset=${historyOffset}`;
-    url += `&select=id,raw_text,source_type,created_at,ingested_at,nodes_extracted,validation_ok`;
-
-    if (currentFilter === "done")    url += `&ingested_at=not.is.null&validation_ok=eq.true`;
-    if (currentFilter === "pending") url += `&ingested_at=is.null`;
-    if (currentFilter === "miniapp") url += `&source_type=eq.miniapp`;
-
-    const res = await supaFetch(url);
-    if (!res.ok) throw new Error(await res.text());
-    const entries = await res.json();
-
-    if (reset) list.innerHTML = "";
-    list.querySelector(".load-more-row")?.remove();
-
-    if (entries.length === 0 && reset) {
-      list.innerHTML = `<div class="history-empty"><div style="font-size:24px">📭</div><div>No entries</div></div>`;
-      return;
-    }
-
-    entries.forEach(e => list.appendChild(buildEntryCard(e)));
-    historyOffset += entries.length;
-
-    if (entries.length === PAGE_SIZE) {
-      const row = document.createElement("div");
-      row.className = "load-more-row";
-      row.innerHTML = `<button class="btn btn-ghost" id="load-more-btn">Load more</button>`;
-      list.appendChild(row);
-      document.getElementById("load-more-btn").addEventListener("click", () => loadHistory(false));
+    if (res.ok && data.ok) {
+      document.getElementById('entry-text').value = '';
+      result.textContent = data.reply;
+      showToast(data.reply);
+      if (sendMode === 'journal') loadTodos(); // refresh in case agent created a todo
+      loadTokenBalance();
     } else {
-      allLoaded = true;
+      result.textContent = data.error || 'Something went wrong.';
     }
   } catch (err) {
-    if (reset) list.innerHTML = `<div class="history-empty"><div>Error: ${escapeHtml(err.message)}</div></div>`;
-    toast(err.message, "error");
+    result.textContent = 'Network error.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Send';
+}
+
+// ═══════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════
+function setSearchType(type) {
+  searchType = type;
+  document.querySelectorAll('.search-type-toggle button').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && type === 'contacts') || (i === 1 && type === 'nodes'));
+  });
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').innerHTML = '<div class="state-msg">Start typing to search.</div>';
+}
+
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) {
+    document.getElementById('search-results').innerHTML = '<div class="state-msg">Start typing to search.</div>';
+    return;
+  }
+  document.getElementById('search-results').innerHTML = '<div class="state-msg">Searching…</div>';
+  searchTimer = setTimeout(() => runSearch(q), 300);
+}
+
+async function runSearch(query) {
+  try {
+    const res = await fetch(FN('miniapp-search'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ type: searchType, query, limit: 10 }),
+    });
+    const data = await res.json();
+    renderSearchResults(data);
+  } catch (err) {
+    document.getElementById('search-results').innerHTML = '<div class="state-msg">Search failed.</div>';
   }
 }
 
-function buildEntryCard(entry) {
-  const card = document.createElement("div");
-  card.className = "entry-card";
-  card.dataset.id = entry.id;
-
-  // Status badge
-  let statusClass = "status-pending";
-  let statusLabel = "pending";
-  if (entry.ingested_at && entry.validation_ok) { statusClass = "status-done"; statusLabel = "processed"; }
-  else if (entry.source_type === "miniapp" && !entry.ingested_at) { statusClass = "status-miniapp"; statusLabel = "queued"; }
-
-  const nodesHtml = (entry.nodes_extracted || []).slice(0, 5)
-    .map(n => `<span class="node-tag">${escapeHtml(n)}</span>`).join("");
-
-  card.innerHTML = `
-    <div class="entry-card-header">
-      <span class="entry-card-date">${fmtDateTime(entry.created_at)}</span>
-      <span class="entry-card-status ${statusClass}">${statusLabel}</span>
+function renderSearchResults(results) {
+  const el = document.getElementById('search-results');
+  if (!results || results.length === 0) {
+    el.innerHTML = '<div class="state-msg">No results found.</div>';
+    return;
+  }
+  el.innerHTML = results.map(r => `
+    <div class="result-item">
+      <div class="name">${esc(r.name)}</div>
+      ${r.sub ? `<div class="sub">${esc(r.sub)}</div>` : ''}
     </div>
-    <div class="entry-card-content">${escapeHtml(entry.raw_text)}</div>
-    ${nodesHtml ? `<div class="entry-card-nodes">${nodesHtml}</div>` : ""}
-  `;
-  card.addEventListener("click", () => openEditModal(entry));
-  return card;
+  `).join('');
 }
 
-// ══════════════════════════════════════════════════════════
-// EDIT MODAL
-// ══════════════════════════════════════════════════════════
-const editModal = document.getElementById("edit-modal");
-const editTA    = document.getElementById("edit-textarea");
-attachMentionEngine(editTA);
-
-function openEditModal(entry) {
-  editingEntryId = entry.id;
-  editTA.value   = entry.raw_text;
-  getMState(editTA).tokenMap = [];
-  document.getElementById("edit-modal-date").textContent = fmtDateTime(entry.created_at);
-
-  // Show extracted nodes if any
-  const nodesEl = document.getElementById("edit-modal-nodes");
-  const nodes   = entry.nodes_extracted || [];
-  nodesEl.innerHTML = nodes.length
-    ? nodes.map(n => `<span class="modal-node-badge">${escapeHtml(n)}</span>`).join("")
-    : "";
-
-  editModal.classList.add("open");
-  setTimeout(() => { editTA.focus(); editTA.setSelectionRange(editTA.value.length, editTA.value.length); }, 50);
-}
-
-function closeEditModal() {
-  editModal.classList.remove("open");
-  closeMentionDropdown(editTA);
-  editingEntryId = null;
-}
-
-document.getElementById("edit-cancel-btn").addEventListener("click", closeEditModal);
-editModal.addEventListener("click", e => { if (e.target === editModal) closeEditModal(); });
-
-document.getElementById("edit-save-btn").addEventListener("click", async () => {
-  const rawText = editTA.value.trim();
-  if (!rawText) { toast("Entry cannot be empty", "error"); return; }
-  if (!editingEntryId) return;
-
-  const ms      = getMState(editTA);
-  const content = serialiseMentions(rawText, ms.tokenMap);
-
-  const btn = document.getElementById("edit-save-btn");
-  btn.disabled = true; btn.textContent = "Saving…";
-
+// ═══════════════════════════════════════════════════
+// TODOS
+// ═══════════════════════════════════════════════════
+async function loadTodos() {
   try {
-    // Update entry — reset ingestion so it gets re-processed
-    const res = await supaFetch(`/rest/v1/entries?id=eq.${editingEntryId}&user_id=eq.${userId}`, {
-      method: "PATCH",
-      headers: { "Prefer": "return=minimal" },
-      body: JSON.stringify({
-        raw_text:    content,
-        modified_at: new Date().toISOString(),
-        ingested_at: null,        // triggers re-ingestion
-        validation_ok: null,
-        nodes_extracted: [],
-        edges_extracted: [],
-      }),
-    });
-    if (!res.ok) throw new Error(await res.text());
-
-    // Re-queue embed job
-    await supaFetch("/rest/v1/processing_queue", {
-      method: "POST",
-      headers: { "Prefer": "return=minimal" },
-      body: JSON.stringify({
-        entry_id: editingEntryId,
-        user_id:  userId,
-        job_type: "embed",
-        status:   "ready",
-      }),
-    });
-
-    toast("Entry updated ✓");
-    closeEditModal();
-    if (document.getElementById("tab-history").classList.contains("active")) loadHistory(true);
-
-  } catch (err) {
-    toast(err.message, "error");
-  } finally {
-    btn.disabled = false; btn.textContent = "Save";
-  }
-});
-
-document.getElementById("edit-delete-btn").addEventListener("click", async () => {
-  if (!editingEntryId) return;
-  if (!confirm("Delete this entry? This cannot be undone.")) return;
-
-  const btn = document.getElementById("edit-delete-btn");
-  btn.disabled = true; btn.textContent = "Deleting…";
-
-  try {
-    const res = await supaFetch(
-      `/rest/v1/entries?id=eq.${editingEntryId}&user_id=eq.${userId}`,
-      { method: "DELETE" }
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/todos?user_id=eq.${userId}&order=due_date.asc.nullslast,created_at.desc&select=id,title,status,priority,due_date,description`,
+      { headers: authHeaders() }
     );
-    if (!res.ok) throw new Error(await res.text());
-    toast("Entry deleted");
-    closeEditModal();
-    if (document.getElementById("tab-history").classList.contains("active")) loadHistory(true);
-
-  } catch (err) {
-    toast(err.message, "error");
-  } finally {
-    btn.disabled = false; btn.textContent = "Delete";
+    const todos = await res.json();
+    renderTodos(todos || []);
+  } catch (e) {
+    document.getElementById('todos-list').innerHTML = '<div class="state-msg">Failed to load todos.</div>';
   }
-});
+}
 
-boot();
+function renderTodos(todos) {
+  const el = document.getElementById('todos-list');
+
+  const open       = todos.filter(t => t.status === 'open');
+  const inProgress = todos.filter(t => t.status === 'in_progress');
+  const done       = todos.filter(t => t.status === 'done').slice(0, 5); // cap recent done
+
+  if (todos.length === 0) {
+    el.innerHTML = '<div class="state-msg">No todos yet 🎉</div>';
+    return;
+  }
+
+  let html = '';
+
+  if (inProgress.length > 0) {
+    html += `<div class="section-title">In progress</div>`;
+    html += inProgress.map(t => todoHTML(t)).join('');
+  }
+  if (open.length > 0) {
+    html += `<div class="section-title">Open</div>`;
+    html += open.map(t => todoHTML(t)).join('');
+  }
+  if (done.length > 0) {
+    html += `<div class="section-title">Recently done</div>`;
+    html += done.map(t => todoHTML(t)).join('');
+  }
+
+  el.innerHTML = html;
+}
+
+function todoHTML(t) {
+  const isDone   = t.status === 'done';
+  const priority = t.priority || 'medium';
+  const due      = t.due_date
+    ? new Date(t.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    : null;
+  const isOverdue = t.due_date && !isDone && new Date(t.due_date) < new Date();
+
+  return `
+    <div class="todo-item" id="todo-${t.id}">
+      <button class="todo-check ${isDone ? 'done' : ''}"
+              onclick="toggleTodo('${t.id}', '${t.status}')"
+              title="${isDone ? 'Mark open' : 'Mark done'}">
+        ${isDone ? '✓' : ''}
+      </button>
+      <div class="priority-dot ${priority}"></div>
+      <div class="todo-body">
+        <div class="todo-title ${isDone ? 'done' : ''}">${esc(t.title)}</div>
+        <div class="todo-meta">
+          ${priority}${due ? ` · <span style="${isOverdue ? 'color:#ff3b30' : ''}">${isOverdue ? '⚠ ' : ''}${due}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function toggleTodo(id, currentStatus) {
+  const newStatus = currentStatus === 'done' ? 'open' : 'done';
+  const completed_at = newStatus === 'done' ? new Date().toISOString() : null;
+
+  // Optimistic UI
+  const item = document.getElementById(`todo-${id}`);
+  if (item) item.style.opacity = '0.5';
+
+  try {
+    const body = { status: newStatus, modified_at: new Date().toISOString() };
+    if (completed_at !== null) body.completed_at = completed_at;
+
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/todos?id=eq.${id}`,
+      {
+        method: 'PATCH',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify(body),
+      }
+    );
+    if (res.ok) {
+      showToast(newStatus === 'done' ? 'Marked done ✓' : 'Reopened');
+      loadTodos();
+    } else {
+      if (item) item.style.opacity = '1';
+      showToast('Update failed');
+    }
+  } catch {
+    if (item) item.style.opacity = '1';
+    showToast('Network error');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// MEMORY
+// ═══════════════════════════════════════════════════
+async function loadMemory() {
+  try {
+    const [profileRes, subRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=full_name,occupation,location,bio,timezone&limit=1`, { headers: authHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/subscriptions?user_id=eq.${userId}&status=eq.active&select=tier,tokens_remaining,tokens_used&limit=1`, { headers: authHeaders() }),
+    ]);
+    const profiles = await profileRes.json();
+    const subs     = await subRes.json();
+    renderMemory(profiles?.[0], subs?.[0]);
+  } catch (e) {
+    document.getElementById('memory-content').innerHTML = '<div class="state-msg">Failed to load.</div>';
+  }
+}
+
+function renderMemory(profile, sub) {
+  const el = document.getElementById('memory-content');
+  let html = '';
+
+  if (sub) {
+    html += `
+      <div class="sub-balance">
+        <div>
+          <div class="label">${sub.tier === 'pro' ? 'Pro plan' : 'Basic plan'}</div>
+          <div style="font-size:12px; color: var(--tg-theme-hint-color,#888); margin-top:2px">${sub.tokens_used} used</div>
+        </div>
+        <div class="value">${sub.tokens_remaining} <span style="font-size:14px; font-weight:400">tokens</span></div>
+      </div>
+    `;
+  } else {
+    html += `<div class="memory-field"><div class="label">Plan</div><div class="value empty">No active plan</div></div>`;
+  }
+
+  const fields = [
+    { label: 'Name',       value: profile?.full_name },
+    { label: 'Occupation', value: profile?.occupation },
+    { label: 'Location',   value: profile?.location },
+    { label: 'Bio',        value: profile?.bio },
+    { label: 'Timezone',   value: profile?.timezone },
+  ];
+
+  fields.forEach(f => {
+    html += `
+      <div class="memory-field">
+        <div class="label">${f.label}</div>
+        <div class="value ${f.value ? '' : 'empty'}">${f.value ? esc(f.value) : 'not set'}</div>
+      </div>
+    `;
+  });
+
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(`screen-${tab}`).classList.add('active');
+  const idx = { home: 0, search: 1, todos: 2, memory: 3 }[tab];
+  document.querySelectorAll('#nav button')[idx].classList.add('active');
+
+  // Refresh on visit
+  if (tab === 'todos')  loadTodos();
+  if (tab === 'memory') loadMemory();
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function authHeaders() {
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    apikey: SUPABASE_ANON_KEY,
+  };
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Start ──
+init();
 </script>
 </body>
 </html>
